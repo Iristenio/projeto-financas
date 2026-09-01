@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const formLancamento = document.getElementById('form-lancamento');
   const lancCategoria = document.getElementById('lanc-categoria');
   const lancMeioPagamento = document.getElementById('lanc-meioPagamento');
+  const lancValorTotal = document.getElementById('lanc-valorTotal');
+  const lancValorParcela = document.getElementById('lanc-valorParcela');
+  const lancQtdParcelas = document.getElementById('lanc-qtdParcelas');
   const lancMesFaturaInicial = document.getElementById('lanc-mesFaturaInicial');
   const lancData = document.getElementById('lanc-data');
   const lancamentoErro = document.getElementById('lancamento-erro');
@@ -43,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const rateioLista = document.getElementById('rateio-lista');
   const rateioSoma = document.getElementById('rateio-soma');
   const btnDividirIgual = document.getElementById('btn-dividir-igual');
+  const btnAdicionarPessoa = document.getElementById('btn-adicionar-pessoa');
   const btnSalvarLancamento = formLancamento.querySelector('.btn-salvar');
   const textoBtnSalvarLancamento = btnSalvarLancamento.textContent;
 
@@ -69,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const editarRateioLista = document.getElementById('editar-rateio-lista');
   const editarRateioSoma = document.getElementById('editar-rateio-soma');
   const editarBtnDividirIgual = document.getElementById('editar-btn-dividir-igual');
+  const editarBtnAdicionarPessoa = document.getElementById('editar-btn-adicionar-pessoa');
+  const btnSalvarEditarLancamento = document.getElementById('btn-salvar-editar-lancamento');
   const editarLancamentoErro = document.getElementById('editar-lancamento-erro');
   const editarLancamentoSucesso = document.getElementById('editar-lancamento-sucesso');
 
@@ -92,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let mapaPessoas = {};
   let lancamentoDetalheId = null;
   let detalheValorTotalAtual = 0;
+  let detalheQtdParcelasAtual = 1;
 
   let idEmEdicao = null;
 
@@ -129,6 +136,130 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function arredondar2(valor) {
+    return Math.round(valor * 100) / 100;
+  }
+
+  /**
+   * Gerencia uma tabela de rateio (linha por pessoa: select +
+   * valor da parcela editável + total somente leitura + remover),
+   * reaproveitada tanto no Nova Conta quanto no Editar Lançamento
+   * — mesmo padrão do sistema antigo (Form_NovaConta/Form_EditarLancamento).
+   */
+  function criarGerenciadorRateio(config) {
+    function pessoasOptionsHtml(pessoaIdSelecionado) {
+      return config
+        .getPessoas()
+        .map((p) => {
+          const rotulo = p.nome + (p.tipo !== 'Membro do Domicílio' ? ' (' + p.tipo + ')' : '');
+          const selecionado = pessoaIdSelecionado != null && Number(pessoaIdSelecionado) === Number(p.id) ? ' selected' : '';
+          return '<option value="' + p.id + '"' + selecionado + '>' + rotulo + '</option>';
+        })
+        .join('');
+    }
+
+    function criarLinha(pessoaId, valorParcelaInicial) {
+      const linha = document.createElement('div');
+      linha.className = 'linha-rateio';
+      linha.innerHTML =
+        '<select class="pessoaSelect">' +
+        pessoasOptionsHtml(pessoaId) +
+        '</select>' +
+        '<input type="number" class="valorParcelaRateio" step="0.01" min="0" placeholder="0,00" value="' +
+        (valorParcelaInicial != null ? Number(valorParcelaInicial).toFixed(2) : '') +
+        '">' +
+        '<span class="valorTotalRateio">R$ 0,00</span>' +
+        '<button type="button" class="btnRemoverPessoa">×</button>';
+      config.container.appendChild(linha);
+
+      linha.querySelector('.btnRemoverPessoa').addEventListener('click', () => {
+        if (config.container.querySelectorAll('.linha-rateio').length > 1) {
+          linha.remove();
+          atualizarResumo();
+        }
+      });
+      linha.querySelector('.valorParcelaRateio').addEventListener('input', atualizarResumo);
+    }
+
+    function obterRateio() {
+      const qtdParcelas = config.getQtdParcelas();
+      return Array.from(config.container.querySelectorAll('.linha-rateio')).map((linha) => {
+        const valorParcela = parseFloat(linha.querySelector('.valorParcelaRateio').value) || 0;
+        return { pessoaId: Number(linha.querySelector('.pessoaSelect').value), valor: arredondar2(valorParcela * qtdParcelas) };
+      });
+    }
+
+    function atualizarResumo() {
+      const valorTotal = config.getValorTotal();
+      const qtdParcelas = config.getQtdParcelas();
+
+      let somaTotais = 0;
+      config.container.querySelectorAll('.linha-rateio').forEach((linha) => {
+        const valorParcela = parseFloat(linha.querySelector('.valorParcelaRateio').value) || 0;
+        const totalPessoa = valorParcela * qtdParcelas;
+        somaTotais += totalPessoa;
+        linha.querySelector('.valorTotalRateio').textContent = formatarValor(totalPessoa);
+      });
+
+      const tolerancia = 0.01 * qtdParcelas;
+      const bate = Math.abs(somaTotais - valorTotal) <= tolerancia && valorTotal > 0;
+
+      config.somaEl.textContent = 'Soma do rateio: ' + formatarValor(somaTotais) + ' de ' + formatarValor(valorTotal);
+      config.somaEl.classList.remove('rateio-soma-ok', 'rateio-soma-erro');
+      config.somaEl.classList.add(bate ? 'rateio-soma-ok' : 'rateio-soma-erro');
+      if (config.btnSalvar) config.btnSalvar.disabled = !bate;
+      return bate;
+    }
+
+    function dividirIgualmente() {
+      const valorTotal = config.getValorTotal();
+      const qtdParcelas = config.getQtdParcelas();
+      const valorParcelaGlobal = qtdParcelas > 0 ? valorTotal / qtdParcelas : 0;
+      const linhas = config.container.querySelectorAll('.linha-rateio');
+      const qtdPessoas = linhas.length;
+      if (qtdPessoas === 0 || valorParcelaGlobal <= 0) return;
+
+      const base = Math.floor((valorParcelaGlobal / qtdPessoas) * 100) / 100;
+      const somaParcial = base * (qtdPessoas - 1);
+      const ultimo = Math.round((valorParcelaGlobal - somaParcial) * 100) / 100;
+
+      linhas.forEach((linha, index) => {
+        linha.querySelector('.valorParcelaRateio').value = (index === qtdPessoas - 1 ? ultimo : base).toFixed(2);
+      });
+      atualizarResumo();
+    }
+
+    function limparValores() {
+      config.container.querySelectorAll('.valorParcelaRateio').forEach((input) => {
+        input.value = '';
+      });
+    }
+
+    function limparTudo() {
+      config.container.innerHTML = '';
+    }
+
+    return { criarLinha, obterRateio, atualizarResumo, dividirIgualmente, limparValores, limparTudo };
+  }
+
+  const gerenciadorRateioNova = criarGerenciadorRateio({
+    container: rateioLista,
+    somaEl: rateioSoma,
+    getValorTotal: () => parseFloat(lancValorTotal.value) || 0,
+    getQtdParcelas: () => Number(lancQtdParcelas.value) || 1,
+    getPessoas: () => pessoasParaRateio,
+    btnSalvar: btnSalvarLancamento,
+  });
+
+  const gerenciadorRateioEditar = criarGerenciadorRateio({
+    container: editarRateioLista,
+    somaEl: editarRateioSoma,
+    getValorTotal: () => detalheValorTotalAtual,
+    getQtdParcelas: () => detalheQtdParcelasAtual,
+    getPessoas: () => pessoasParaRateio,
+    btnSalvar: btnSalvarEditarLancamento,
+  });
+
   async function carregarListasDeApoio() {
     const [categorias, meiosPagamento, pessoas] = await Promise.all([
       apiGet('categorias'),
@@ -152,7 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
       meiosPagamento.filter((m) => m.tipo !== 'Pronto Pagamento')
     );
     pessoasParaRateio = pessoas;
-    montarRateioLista();
+    gerenciadorRateioNova.limparTudo();
+    gerenciadorRateioNova.criarLinha(null, null);
+    gerenciadorRateioNova.atualizarResumo();
 
     categoriasCache = categorias;
     mapaCategorias = {};
@@ -303,9 +436,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await popularSelect(editarCategoria, categoriasCache, detalhe.categoriaId);
       editarDescricao.value = detalhe.descricao || '';
-      const valoresIniciais = {};
-      detalhe.rateio.forEach((r) => (valoresIniciais[r.pessoaId] = r.valorTotal));
-      montarEditarRateioLista(valoresIniciais);
+      detalheQtdParcelasAtual = detalhe.qtdParcelas;
+      gerenciadorRateioEditar.limparTudo();
+      detalhe.rateio.forEach((r) => gerenciadorRateioEditar.criarLinha(r.pessoaId, r.valorTotal / detalhe.qtdParcelas));
+      gerenciadorRateioEditar.atualizarResumo();
 
       if (!manterMensagens) {
         editarLancamentoErro.hidden = true;
@@ -328,107 +462,23 @@ document.addEventListener('DOMContentLoaded', () => {
     listaLancamentosCarregada = true;
   });
 
-  function montarEditarRateioLista(valoresIniciais) {
-    editarRateioLista.innerHTML = '';
-    pessoasParaRateio.forEach((pessoa) => {
-      const linha = document.createElement('div');
-      linha.className = 'rateio-linha';
-      linha.dataset.pessoaId = pessoa.id;
-
-      const label = document.createElement('label');
-      label.className = 'rateio-check';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'rateio-incluir';
-      const nomeSpan = document.createElement('span');
-      nomeSpan.textContent = pessoa.nome;
-      label.append(checkbox, nomeSpan);
-
-      if (pessoa.tipo !== 'Membro do Domicílio') {
-        const badge = document.createElement('span');
-        badge.className = 'rateio-tipo-badge';
-        badge.textContent = pessoa.tipo;
-        label.appendChild(badge);
-      }
-
-      const inputValor = document.createElement('input');
-      inputValor.type = 'number';
-      inputValor.className = 'rateio-valor';
-      inputValor.inputMode = 'decimal';
-      inputValor.step = '0.01';
-      inputValor.min = '0';
-      inputValor.placeholder = '0,00';
-
-      const valorInicial = valoresIniciais[pessoa.id];
-      if (valorInicial !== undefined) {
-        checkbox.checked = true;
-        inputValor.value = valorInicial.toFixed(2);
-      } else {
-        inputValor.disabled = true;
-      }
-
-      checkbox.addEventListener('change', () => {
-        inputValor.disabled = !checkbox.checked;
-        if (!checkbox.checked) inputValor.value = '';
-        atualizarEditarSomaRateio();
-      });
-      inputValor.addEventListener('input', atualizarEditarSomaRateio);
-
-      linha.append(label, inputValor);
-      editarRateioLista.appendChild(linha);
-    });
-    atualizarEditarSomaRateio();
-  }
-
-  function obterEditarRateioSelecionado() {
-    return Array.from(editarRateioLista.querySelectorAll('.rateio-linha'))
-      .filter((linha) => linha.querySelector('.rateio-incluir').checked)
-      .map((linha) => ({
-        pessoaId: Number(linha.dataset.pessoaId),
-        valor: parseFloat(linha.querySelector('.rateio-valor').value) || 0,
-      }));
-  }
-
-  function atualizarEditarSomaRateio() {
-    const rateio = obterEditarRateioSelecionado();
-    const soma = rateio.reduce((total, item) => total + item.valor, 0);
-    editarRateioSoma.textContent = 'Soma do rateio: ' + formatarValor(soma) + ' de ' + formatarValor(detalheValorTotalAtual);
-    editarRateioSoma.classList.remove('rateio-soma-ok', 'rateio-soma-erro');
-    editarRateioSoma.classList.add(Math.abs(soma - detalheValorTotalAtual) < 0.01 ? 'rateio-soma-ok' : 'rateio-soma-erro');
-  }
-
-  editarBtnDividirIgual.addEventListener('click', () => {
-    const selecionadas = Array.from(editarRateioLista.querySelectorAll('.rateio-linha')).filter(
-      (linha) => linha.querySelector('.rateio-incluir').checked
-    );
-    if (selecionadas.length === 0) return;
-
-    const partes = new Array(selecionadas.length).fill(Math.floor((detalheValorTotalAtual / selecionadas.length) * 100) / 100);
-    const somaPartes = partes.reduce((a, b) => a + b, 0);
-    partes[partes.length - 1] = Math.round((detalheValorTotalAtual - somaPartes + partes[partes.length - 1]) * 100) / 100;
-
-    selecionadas.forEach((linha, index) => {
-      linha.querySelector('.rateio-valor').value = partes[index].toFixed(2);
-    });
-    atualizarEditarSomaRateio();
+  editarBtnAdicionarPessoa.addEventListener('click', () => {
+    gerenciadorRateioEditar.limparValores();
+    gerenciadorRateioEditar.criarLinha(null, null);
+    gerenciadorRateioEditar.atualizarResumo();
   });
+
+  editarBtnDividirIgual.addEventListener('click', () => gerenciadorRateioEditar.dividirIgualmente());
 
   formEditarLancamento.addEventListener('submit', async (event) => {
     event.preventDefault();
     editarLancamentoErro.hidden = true;
     editarLancamentoSucesso.hidden = true;
 
-    const rateio = obterEditarRateioSelecionado();
-    if (rateio.length === 0) {
-      editarLancamentoErro.textContent = 'Selecione ao menos uma pessoa no rateio.';
-      editarLancamentoErro.hidden = false;
-      return;
-    }
-
     try {
       await apiPost('lancamentos', 'atualizar', {
         id: lancamentoDetalheId,
-        dados: { categoriaId: Number(editarCategoria.value), descricao: editarDescricao.value, rateio: rateio },
+        dados: { categoriaId: Number(editarCategoria.value), descricao: editarDescricao.value, rateio: gerenciadorRateioEditar.obterRateio() },
       });
       editarLancamentoSucesso.textContent = 'Alterações salvas.';
       editarLancamentoSucesso.hidden = false;
@@ -437,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (erro) {
       editarLancamentoErro.textContent = erro.message;
       editarLancamentoErro.hidden = false;
+      gerenciadorRateioEditar.atualizarResumo();
     }
   });
 
@@ -488,114 +539,81 @@ document.addEventListener('DOMContentLoaded', () => {
   btnExcluirAbertas.addEventListener('click', () => excluirLancamentoAtual('apenasAbertas'));
   btnExcluirTudo.addEventListener('click', () => excluirLancamentoAtual('tudo'));
 
-  function montarRateioLista() {
-    rateioLista.innerHTML = '';
-    pessoasParaRateio.forEach((pessoa) => {
-      const linha = document.createElement('div');
-      linha.className = 'rateio-linha';
-      linha.dataset.pessoaId = pessoa.id;
-
-      const label = document.createElement('label');
-      label.className = 'rateio-check';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'rateio-incluir';
-      const nomeSpan = document.createElement('span');
-      nomeSpan.textContent = pessoa.nome;
-      label.append(checkbox, nomeSpan);
-
-      if (pessoa.tipo !== 'Membro do Domicílio') {
-        const badge = document.createElement('span');
-        badge.className = 'rateio-tipo-badge';
-        badge.textContent = pessoa.tipo;
-        label.appendChild(badge);
-      }
-
-      const inputValor = document.createElement('input');
-      inputValor.type = 'number';
-      inputValor.className = 'rateio-valor';
-      inputValor.inputMode = 'decimal';
-      inputValor.step = '0.01';
-      inputValor.min = '0';
-      inputValor.placeholder = '0,00';
-      inputValor.disabled = true;
-
-      checkbox.addEventListener('change', () => {
-        inputValor.disabled = !checkbox.checked;
-        if (!checkbox.checked) inputValor.value = '';
-        atualizarSomaRateio();
-      });
-      inputValor.addEventListener('input', atualizarSomaRateio);
-
-      linha.append(label, inputValor);
-      rateioLista.appendChild(linha);
-    });
-    atualizarSomaRateio();
+  function getModoValorLancamento() {
+    return document.querySelector('input[name="lancModoValor"]:checked').value;
   }
 
-  function obterRateioSelecionado() {
-    return Array.from(rateioLista.querySelectorAll('.rateio-linha'))
-      .filter((linha) => linha.querySelector('.rateio-incluir').checked)
-      .map((linha) => ({
-        pessoaId: Number(linha.dataset.pessoaId),
-        valor: parseFloat(linha.querySelector('.rateio-valor').value) || 0,
-      }));
+  function aplicarModoValorLancamento() {
+    const modo = getModoValorLancamento();
+    lancValorTotal.disabled = modo !== 'total';
+    lancValorParcela.disabled = modo !== 'parcela';
   }
 
-  function atualizarSomaRateio() {
-    const rateio = obterRateioSelecionado();
-    const soma = rateio.reduce((total, item) => total + item.valor, 0);
-    const valorTotal = parseFloat(document.getElementById('lanc-valorTotal').value) || 0;
-    rateioSoma.textContent = 'Soma do rateio: ' + formatarValor(soma) + (valorTotal ? ' de ' + formatarValor(valorTotal) : '');
-    rateioSoma.classList.remove('rateio-soma-ok', 'rateio-soma-erro');
-    if (valorTotal > 0) {
-      rateioSoma.classList.add(Math.abs(soma - valorTotal) < 0.01 ? 'rateio-soma-ok' : 'rateio-soma-erro');
+  // Espelha Valor Total <-> Valor da Parcela conforme o modo
+  // escolhido (igual ao Nova Conta do sistema antigo), e quando só
+  // há 1 pessoa no rateio, mantém a parcela dela igual à parcela
+  // global — cobre o caso mais comum sem precisar tocar no rateio.
+  function recalcularValoresLancamento() {
+    const modo = getModoValorLancamento();
+    const qtdParcelas = Number(lancQtdParcelas.value) || 1;
+
+    if (modo === 'total') {
+      const valorTotal = parseFloat(lancValorTotal.value) || 0;
+      const valorParcela = valorTotal / qtdParcelas;
+      lancValorParcela.value = valorParcela ? valorParcela.toFixed(2) : '';
+    } else {
+      const valorParcela = parseFloat(lancValorParcela.value) || 0;
+      const valorTotal = valorParcela * qtdParcelas;
+      lancValorTotal.value = valorTotal ? valorTotal.toFixed(2) : '';
     }
+
+    const linhas = rateioLista.querySelectorAll('.linha-rateio');
+    if (linhas.length === 1) {
+      const valorParcelaGlobal = parseFloat(lancValorParcela.value) || 0;
+      linhas[0].querySelector('.valorParcelaRateio').value = valorParcelaGlobal ? valorParcelaGlobal.toFixed(2) : '';
+    }
+
+    gerenciadorRateioNova.atualizarResumo();
   }
 
-  btnDividirIgual.addEventListener('click', () => {
-    const selecionadas = Array.from(rateioLista.querySelectorAll('.rateio-linha')).filter(
-      (linha) => linha.querySelector('.rateio-incluir').checked
-    );
-    if (selecionadas.length === 0) return;
-    const valorTotal = parseFloat(document.getElementById('lanc-valorTotal').value) || 0;
-    if (valorTotal <= 0) return;
-
-    const partes = new Array(selecionadas.length).fill(Math.floor((valorTotal / selecionadas.length) * 100) / 100);
-    const somaPartes = partes.reduce((a, b) => a + b, 0);
-    partes[partes.length - 1] = Math.round((valorTotal - somaPartes + partes[partes.length - 1]) * 100) / 100;
-
-    selecionadas.forEach((linha, index) => {
-      linha.querySelector('.rateio-valor').value = partes[index].toFixed(2);
+  document.querySelectorAll('input[name="lancModoValor"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      aplicarModoValorLancamento();
+      recalcularValoresLancamento();
     });
-    atualizarSomaRateio();
+  });
+  lancValorTotal.addEventListener('input', () => {
+    if (getModoValorLancamento() === 'total') recalcularValoresLancamento();
+  });
+  lancValorParcela.addEventListener('input', () => {
+    if (getModoValorLancamento() === 'parcela') recalcularValoresLancamento();
+  });
+  lancQtdParcelas.addEventListener('input', recalcularValoresLancamento);
+
+  btnAdicionarPessoa.addEventListener('click', () => {
+    gerenciadorRateioNova.limparValores();
+    gerenciadorRateioNova.criarLinha(null, null);
+    gerenciadorRateioNova.atualizarResumo();
   });
 
-  document.getElementById('lanc-valorTotal').addEventListener('input', atualizarSomaRateio);
+  btnDividirIgual.addEventListener('click', () => gerenciadorRateioNova.dividirIgualmente());
 
   formLancamento.addEventListener('submit', async (event) => {
     event.preventDefault();
     lancamentoErro.hidden = true;
     lancamentoSucesso.hidden = true;
 
-    const rateio = obterRateioSelecionado();
-    if (rateio.length === 0) {
-      lancamentoErro.textContent = 'Selecione ao menos uma pessoa no rateio.';
-      lancamentoErro.hidden = false;
-      return;
-    }
-
     const dados = {
       categoriaId: Number(lancCategoria.value),
       meioPagamentoId: Number(lancMeioPagamento.value),
       descricao: document.getElementById('lanc-descricao').value,
-      valorTotal: parseFloat(document.getElementById('lanc-valorTotal').value),
-      qtdParcelas: Number(document.getElementById('lanc-qtdParcelas').value),
+      valorTotal: parseFloat(lancValorTotal.value),
+      qtdParcelas: Number(lancQtdParcelas.value),
       mesFaturaInicial: lancMesFaturaInicial.value,
       parcelaReferencia: Number(document.getElementById('lanc-parcelaReferencia').value),
       data: lancData.value,
       recorrente: document.getElementById('lanc-recorrente').checked,
-      rateio: rateio,
+      rateio: gerenciadorRateioNova.obterRateio(),
     };
 
     btnSalvarLancamento.disabled = true;
@@ -605,18 +623,21 @@ document.addEventListener('DOMContentLoaded', () => {
       formLancamento.reset();
       preencherDataHoje(lancData);
       lancMesFaturaInicial.value = mesAtual();
-      document.getElementById('lanc-qtdParcelas').value = 1;
+      lancQtdParcelas.value = 1;
       document.getElementById('lanc-parcelaReferencia').value = 1;
-      montarRateioLista();
+      document.querySelector('input[name="lancModoValor"][value="total"]').checked = true;
+      aplicarModoValorLancamento();
+      gerenciadorRateioNova.limparTudo();
+      gerenciadorRateioNova.criarLinha(null, null);
       listaLancamentosCarregada = false;
 
       lancamentoSucesso.textContent = 'Lançamento criado com sucesso.';
       lancamentoSucesso.hidden = false;
+      gerenciadorRateioNova.atualizarResumo();
     } catch (erro) {
       lancamentoErro.textContent = erro.message;
       lancamentoErro.hidden = false;
-    } finally {
-      btnSalvarLancamento.disabled = false;
+      gerenciadorRateioNova.atualizarResumo();
     }
   });
 

@@ -238,60 +238,82 @@ form select {
   font-size: 0.85rem;
 }
 
-.rateio-linha {
+.opcoes-modo-valor {
   display: flex;
+  gap: 16px;
+  margin: 8px 0 4px;
+}
+
+.opcoes-modo-valor .campo-checkbox {
+  margin-top: 0;
+}
+
+.cabecalho-rateio {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 26px;
+  gap: 8px;
+  padding: 0 2px 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.linha-rateio {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 26px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 8px 0;
+  padding: 6px 0;
   border-bottom: 1px solid var(--color-border);
 }
 
-.rateio-linha:last-of-type {
+.linha-rateio:last-of-type {
   border-bottom: none;
 }
 
-.rateio-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 140px;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-
-.rateio-check input {
-  width: auto;
-  flex-shrink: 0;
-}
-
-.rateio-tipo-badge {
-  font-size: 0.72rem;
-  white-space: nowrap;
-  color: var(--color-text-muted);
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  padding: 2px 8px;
-  border-radius: 999px;
-}
-
-.rateio-valor {
-  width: 110px;
-  padding: 8px 10px;
+.linha-rateio select.pessoaSelect {
+  font-size: 0.9rem;
+  padding: 8px 6px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: 0.95rem;
+  min-width: 0;
 }
 
-.rateio-valor:disabled {
-  opacity: 0.4;
+.valorParcelaRateio {
+  width: 100%;
+  padding: 8px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+.valorTotalRateio {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.btnRemoverPessoa {
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.botoes-rateio {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .btn-secundario {
-  margin-top: 10px;
   padding: 8px 14px;
   border: 1px solid var(--color-primary);
   border-radius: 8px;
