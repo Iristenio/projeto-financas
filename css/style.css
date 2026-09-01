@@ -95,13 +95,17 @@ body {
   margin: 8px 0 0;
 }
 
-.tabs {
+.tabs, .subtabs {
   display: flex;
   gap: 8px;
   padding: 8px 0;
 }
 
-.tab-button {
+.subtabs {
+  margin-bottom: 6px;
+}
+
+.tab-button, .subtab-button {
   flex: 1;
   padding: 10px 0;
   border: none;
@@ -113,12 +117,12 @@ body {
   cursor: pointer;
 }
 
-.tab-button[aria-selected="true"] {
+.tab-button[aria-selected="true"], .subtab-button[aria-selected="true"] {
   background: var(--color-primary);
   color: var(--color-primary-text);
 }
 
-.tab-panel[hidden] {
+.tab-panel[hidden], .subtab-panel[hidden] {
   display: none;
 }
 
@@ -309,6 +313,76 @@ form select {
 
 .rateio-soma-erro {
   color: var(--color-danger);
+}
+
+.lista-lancamentos {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lancamento-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lancamento-linha1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 1.05rem;
+}
+
+.lancamento-linha1 strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lancamento-linha2 {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-recorrente {
+  font-size: 0.7rem;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.lancamento-progresso {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.lancamento-saldo {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.lancamento-saldo.quitado {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.lancamento-proxima {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 .filtro-mes-label {

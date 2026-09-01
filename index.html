@@ -83,7 +83,18 @@
         </section>
 
         <section id="tab-lancamentos" class="tab-panel" hidden role="tabpanel">
-          <h2 class="titulo-secao">Nova Conta</h2>
+          <nav class="subtabs" role="tablist">
+            <button type="button" class="subtab-button" data-subtab="nova" role="tab" aria-selected="true">Nova Conta</button>
+            <button type="button" class="subtab-button" data-subtab="lista" role="tab" aria-selected="false">Contas Lançadas</button>
+          </nav>
+
+          <div id="subtab-lista" class="subtab-panel" hidden>
+            <ul id="lista-lancamentos" class="lista-lancamentos"></ul>
+            <p id="lancamentos-vazio" class="estado-vazio" hidden>Nenhum lançamento ainda.</p>
+            <p id="lancamentos-carregando" class="estado-vazio">Carregando...</p>
+          </div>
+
+          <div id="subtab-nova" class="subtab-panel">
           <form id="form-lancamento">
             <div class="campo-grupo">
               <div>
@@ -141,6 +152,7 @@
             <p id="lancamento-erro" class="mensagem-erro" hidden></p>
             <p id="lancamento-sucesso" class="mensagem-sucesso" hidden></p>
           </form>
+          </div>
         </section>
       </div>
     </section>

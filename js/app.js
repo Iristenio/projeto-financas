@@ -46,8 +46,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSalvarLancamento = formLancamento.querySelector('.btn-salvar');
   const textoBtnSalvarLancamento = btnSalvarLancamento.textContent;
 
+  const subtabButtons = document.querySelectorAll('.subtab-button');
+  const subtabPanels = {
+    nova: document.getElementById('subtab-nova'),
+    lista: document.getElementById('subtab-lista'),
+  };
+  const listaLancamentos = document.getElementById('lista-lancamentos');
+  const lancamentosVazio = document.getElementById('lancamentos-vazio');
+  const lancamentosCarregando = document.getElementById('lancamentos-carregando');
+
   let listasLancamentoCarregadas = false;
+  let listaLancamentosCarregada = false;
   let pessoasParaRateio = [];
+  let mapaCategorias = {};
+  let mapaMeiosPagamento = {};
 
   let idEmEdicao = null;
 
@@ -109,7 +121,96 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     pessoasParaRateio = pessoas;
     montarRateioLista();
+
+    mapaCategorias = {};
+    categorias.forEach((c) => (mapaCategorias[c.id] = c.nome));
+    mapaMeiosPagamento = {};
+    meiosPagamento.forEach((m) => (mapaMeiosPagamento[m.id] = m.nome));
   }
+
+  function formatarMesAno(dataIso) {
+    const d = new Date(dataIso);
+    const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    return meses[d.getUTCMonth()] + '/' + d.getUTCFullYear();
+  }
+
+  async function renderListaLancamentos() {
+    lancamentosCarregando.hidden = false;
+    lancamentosVazio.hidden = true;
+    listaLancamentos.innerHTML = '';
+
+    try {
+      const lancamentos = await apiGet('lancamentos');
+      lancamentos.sort((a, b) => new Date(b.data) - new Date(a.data) || b.id - a.id);
+
+      lancamentos.forEach((lanc) => {
+        const li = document.createElement('li');
+        li.className = 'lancamento-card';
+
+        const linha1 = document.createElement('div');
+        linha1.className = 'lancamento-linha1';
+        const descSpan = document.createElement('strong');
+        descSpan.textContent = lanc.descricao || '(sem descrição)';
+        const valorSpan = document.createElement('span');
+        valorSpan.textContent = formatarValor(lanc.valorTotal);
+        linha1.append(descSpan, valorSpan);
+
+        const linha2 = document.createElement('div');
+        linha2.className = 'lancamento-linha2';
+        const categoriaMeio = document.createElement('span');
+        categoriaMeio.textContent = (mapaCategorias[lanc.categoriaId] || '?') + ' · ' + (mapaMeiosPagamento[lanc.meioPagamentoId] || '?');
+        linha2.appendChild(categoriaMeio);
+        if (lanc.recorrente) {
+          const badge = document.createElement('span');
+          badge.className = 'badge-recorrente';
+          badge.textContent = 'Recorrente';
+          linha2.appendChild(badge);
+        }
+
+        const progresso = document.createElement('div');
+        progresso.className = 'lancamento-progresso';
+        progresso.textContent = lanc.parcelasPagas + '/' + lanc.parcelasTotal + ' parcelas pagas · ' + formatarValor(lanc.valorPago) + ' pago';
+
+        const saldo = document.createElement('div');
+        const quitado = lanc.saldoDevedor <= 0;
+        saldo.className = 'lancamento-saldo' + (quitado ? ' quitado' : '');
+        saldo.textContent = quitado ? 'Quitado' : 'Saldo devedor: ' + formatarValor(lanc.saldoDevedor);
+
+        li.append(linha1, linha2, progresso, saldo);
+
+        if (lanc.proximaParcela) {
+          const proxima = document.createElement('div');
+          proxima.className = 'lancamento-proxima';
+          proxima.textContent =
+            'Próxima parcela: Nº' + lanc.proximaParcela.numero + ' · ' + formatarValor(lanc.proximaParcela.valor) + ' · ' + formatarMesAno(lanc.proximaParcela.mesVencimento);
+          li.appendChild(proxima);
+        }
+
+        listaLancamentos.appendChild(li);
+      });
+
+      lancamentosVazio.hidden = lancamentos.length > 0;
+    } catch (erro) {
+      lancamentosVazio.textContent = 'Não foi possível carregar: ' + erro.message;
+      lancamentosVazio.hidden = false;
+    } finally {
+      lancamentosCarregando.hidden = true;
+    }
+  }
+
+  subtabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const alvo = button.dataset.subtab;
+      subtabButtons.forEach((b) => b.setAttribute('aria-selected', b === button ? 'true' : 'false'));
+      Object.entries(subtabPanels).forEach(([nome, painel]) => {
+        painel.hidden = nome !== alvo;
+      });
+      if (alvo === 'lista' && !listaLancamentosCarregada) {
+        listaLancamentosCarregada = true;
+        renderListaLancamentos();
+      }
+    });
+  });
 
   function montarRateioLista() {
     rateioLista.innerHTML = '';
@@ -231,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('lanc-qtdParcelas').value = 1;
       document.getElementById('lanc-parcelaReferencia').value = 1;
       montarRateioLista();
+      listaLancamentosCarregada = false;
 
       lancamentoSucesso.textContent = 'Lançamento criado com sucesso.';
       lancamentoSucesso.hidden = false;
