@@ -113,6 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const pagarErro = document.getElementById('pagar-erro');
   const pagarSucesso = document.getElementById('pagar-sucesso');
 
+  const telaRecorrentes = document.getElementById('tela-recorrentes');
+  const btnVoltarRecorrentes = document.getElementById('btn-voltar-recorrentes');
+  const listaRecorrentes = document.getElementById('lista-recorrentes');
+  const recorrentesVazio = document.getElementById('recorrentes-vazio');
+  const recorrentesCarregando = document.getElementById('recorrentes-carregando');
+
   const btnExcluirAbertas = document.getElementById('btn-excluir-abertas');
   const btnExcluirTudo = document.getElementById('btn-excluir-tudo');
   const excluirLancamentoErro = document.getElementById('excluir-lancamento-erro');
@@ -836,8 +842,22 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('click', () => {
       fecharMenu();
       if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
+      else if (item.dataset.tela === 'recorrentes') abrirTelaRecorrentes();
     });
   });
+
+  function esconderAbasEMostrar(elemento) {
+    Object.values(tabPanels).forEach((painel) => {
+      painel.hidden = true;
+    });
+    tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
+    containerPrincipal.classList.remove('container-larga');
+    elemento.hidden = false;
+  }
+
+  function voltarParaAbaLancar() {
+    document.querySelector('[data-tab="lancar"]').click();
+  }
 
   function popularSelectComOpcaoTodos(select, itens, rotuloTodos) {
     select.innerHTML = '<option value="">' + rotuloTodos + '</option>';
@@ -880,8 +900,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnVoltarPagarParcela.addEventListener('click', () => {
     telaPagarParcela.hidden = true;
-    document.querySelector('[data-tab="lancar"]').click();
+    voltarParaAbaLancar();
   });
+
+  async function abrirTelaRecorrentes() {
+    esconderAbasEMostrar(telaRecorrentes);
+    if (!listasLancamentoCarregadas) {
+      listasLancamentoCarregadas = true;
+      try {
+        await carregarListasLancamento();
+      } catch (erro) {
+        recorrentesVazio.textContent = 'Não foi possível carregar categorias: ' + erro.message;
+        recorrentesVazio.hidden = false;
+      }
+    }
+    renderRecorrentes();
+  }
+
+  btnVoltarRecorrentes.addEventListener('click', () => {
+    telaRecorrentes.hidden = true;
+    voltarParaAbaLancar();
+  });
+
+  async function renderRecorrentes() {
+    recorrentesCarregando.hidden = false;
+    recorrentesVazio.hidden = true;
+    listaRecorrentes.innerHTML = '';
+
+    try {
+      const pendentes = await apiGet('recorrencia-pendentes');
+
+      pendentes.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = 'lancamento-card';
+
+        const linha1 = document.createElement('div');
+        linha1.className = 'lancamento-linha1';
+        const descSpan = document.createElement('strong');
+        descSpan.textContent = item.descricao || '(sem descrição)';
+        linha1.appendChild(descSpan);
+
+        const linha2 = document.createElement('div');
+        linha2.className = 'lancamento-linha2';
+        linha2.textContent = (mapaCategorias[item.categoriaId] || '?') + ' · ' + item.parcelasRestantes + ' parcela(s) restante(s)';
+
+        const acao = document.createElement('div');
+        acao.className = 'recorrente-acao';
+        const inputQtd = document.createElement('input');
+        inputQtd.type = 'number';
+        inputQtd.min = '1';
+        inputQtd.step = '1';
+        inputQtd.value = '12';
+        const btnRenovar = document.createElement('button');
+        btnRenovar.type = 'button';
+        btnRenovar.className = 'btn-primario';
+        btnRenovar.textContent = 'Renovar';
+        acao.append(inputQtd, btnRenovar);
+
+        const erro = document.createElement('p');
+        erro.className = 'recorrente-erro';
+        erro.hidden = true;
+
+        btnRenovar.addEventListener('click', async () => {
+          erro.hidden = true;
+          btnRenovar.disabled = true;
+          btnRenovar.textContent = 'Renovando...';
+          try {
+            await apiPost('recorrencia', 'renovar', {
+              lancamentoId: item.lancamentoId,
+              qtdNovasParcelas: Number(inputQtd.value) || 12,
+            });
+            listaLancamentosCarregada = false;
+            renderRecorrentes();
+          } catch (err) {
+            erro.textContent = err.message;
+            erro.hidden = false;
+            btnRenovar.disabled = false;
+            btnRenovar.textContent = 'Renovar';
+          }
+        });
+
+        li.append(linha1, linha2, acao, erro);
+        listaRecorrentes.appendChild(li);
+      });
+
+      recorrentesVazio.hidden = pendentes.length > 0;
+    } catch (erro) {
+      recorrentesVazio.textContent = 'Não foi possível carregar: ' + erro.message;
+      recorrentesVazio.hidden = false;
+    } finally {
+      recorrentesCarregando.hidden = true;
+    }
+  }
 
   function atualizarTotalSelecionado() {
     const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));

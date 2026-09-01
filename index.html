@@ -22,6 +22,7 @@
 
   <nav id="menu-lateral" class="menu-lateral" hidden>
     <button type="button" class="menu-item" data-tela="pagar-parcela">Parcelas</button>
+    <button type="button" class="menu-item" data-tela="recorrentes">Recorrentes</button>
   </nav>
   <div id="menu-overlay" class="menu-overlay" hidden></div>
 
@@ -320,6 +321,16 @@
           <p id="pagar-erro" class="mensagem-erro" hidden></p>
           <p id="pagar-sucesso" class="mensagem-sucesso" hidden></p>
         </div>
+      </section>
+
+      <section id="tela-recorrentes" hidden>
+        <button type="button" id="btn-voltar-recorrentes" class="btn-secundario">← Voltar</button>
+        <h2 class="titulo-secao">Recorrentes</h2>
+        <p class="campo-ajuda">Lançamentos recorrentes com 2 ou menos parcelas em aberto — hora de gerar mais um lote.</p>
+
+        <ul id="lista-recorrentes" class="lista-lancamentos"></ul>
+        <p id="recorrentes-vazio" class="estado-vazio" hidden>Nenhuma renovação pendente no momento.</p>
+        <p id="recorrentes-carregando" class="estado-vazio">Carregando...</p>
       </section>
     </section>
   </main>
