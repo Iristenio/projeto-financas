@@ -8,7 +8,6 @@ if ('serviceWorker' in navigator) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const saudacao = document.getElementById('saudacao');
-  const bloqueioColaborador = document.getElementById('bloqueio-colaborador');
   const areaAdmin = document.getElementById('area-admin');
 
   const containerPrincipal = document.querySelector('main.container');
@@ -977,8 +976,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (telaLarga) containerPrincipal.classList.add('container-larga');
   }
 
+  // Admin volta pra "Lançar" (aba inicial dele); Colaborador não
+  // tem essa aba, então volta pra "Lançamentos" — a que ele mais usa.
   function voltarParaAbaLancar() {
-    document.querySelector('[data-tab="lancar"]').click();
+    const alvo = window.pessoaAtual.papel === 'Admin' ? 'lancar' : 'lancamentos';
+    document.querySelector('[data-tab="' + alvo + '"]').click();
   }
 
   function popularSelectComOpcaoTodos(select, itens, rotuloTodos) {
@@ -1653,15 +1655,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   iniciarSessao(async (pessoa) => {
     saudacao.textContent = 'Olá, ' + pessoa.nome;
+    areaAdmin.hidden = false;
 
-    if (pessoa.papel !== 'Admin') {
-      bloqueioColaborador.hidden = false;
-      areaAdmin.hidden = true;
+    // Lançar/Histórico (Gastos_Rotineiros) são só do Admin — são os
+    // gastos pessoais usados pra traçar o próprio perfil econômico,
+    // não fazem parte do controle de contas da casa. Todo o resto
+    // (Lançamentos e as telas do menu ☰) é compartilhado.
+    const ehAdmin = pessoa.papel === 'Admin';
+    document.querySelector('[data-tab="lancar"]').hidden = !ehAdmin;
+    document.querySelector('[data-tab="historico"]').hidden = !ehAdmin;
+
+    if (!ehAdmin) {
+      document.querySelector('[data-tab="lancamentos"]').click();
       return;
     }
-
-    areaAdmin.hidden = false;
-    bloqueioColaborador.hidden = true;
 
     preencherDataHoje();
     filtroMes.value = mesAtual();
