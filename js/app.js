@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const formAjustarParcela = document.getElementById('form-ajustar-parcela');
   const ajustarNumeroParcela = document.getElementById('ajustar-numeroParcela');
+  const ajustarNumeroParcelaLinha = document.getElementById('ajustar-numeroParcela-linha');
   const ajustarNovoValor = document.getElementById('ajustar-novoValor');
   const ajustarModo = document.getElementById('ajustar-modo');
   const ajustarParcelaErro = document.getElementById('ajustar-parcela-erro');
@@ -131,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const telaMonitoramento = document.getElementById('tela-monitoramento');
   const btnVoltarMonitoramento = document.getElementById('btn-voltar-monitoramento');
-  const monitorTitulo = document.getElementById('monitor-titulo');
   const monitorMes = document.getElementById('monitor-mes');
   const monitorAno = document.getElementById('monitor-ano');
   const monitorStatus = document.getElementById('monitor-status');
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     pessoasParaRateio = pessoas;
     gerenciadorRateioNova.limparTudo();
-    gerenciadorRateioNova.criarLinha(null, null);
+    gerenciadorRateioNova.criarLinha(window.pessoaAtual.id, null);
     gerenciadorRateioNova.atualizarResumo();
 
     categoriasCache = categorias;
@@ -571,6 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
           anteciparParcelasLista.appendChild(labelCheck);
         }
       });
+      atualizarVisibilidadeNumeroParcela();
 
       await popularSelect(editarCategoria, categoriasCache, detalhe.categoriaId);
       editarDescricao.value = detalhe.descricao || '';
@@ -630,6 +631,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // "Todas as parcelas" não depende de escolher uma parcela
+  // específica — inclusive faz sentido quando não sobra nenhuma
+  // parcela em aberto (select ficaria vazio e bloquearia o envio).
+  function atualizarVisibilidadeNumeroParcela() {
+    const aplicaATodas = ajustarModo.value === 'todas';
+    ajustarNumeroParcelaLinha.hidden = aplicaATodas;
+    ajustarNumeroParcela.required = !aplicaATodas;
+  }
+  ajustarModo.addEventListener('change', atualizarVisibilidadeNumeroParcela);
+
   formAjustarParcela.addEventListener('submit', async (event) => {
     event.preventDefault();
     ajustarParcelaErro.hidden = true;
@@ -638,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await apiPost('lancamentos', 'ajustarValorParcelas', {
         id: lancamentoDetalheId,
-        numeroParcela: Number(ajustarNumeroParcela.value),
+        numeroParcela: ajustarNumeroParcela.value ? Number(ajustarNumeroParcela.value) : null,
         novoValor: parseFloat(ajustarNovoValor.value),
         modo: ajustarModo.value,
       });
@@ -794,7 +805,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('input[name="lancModoValor"][value="total"]').checked = true;
       aplicarModoValorLancamento();
       gerenciadorRateioNova.limparTudo();
-      gerenciadorRateioNova.criarLinha(null, null);
+      gerenciadorRateioNova.criarLinha(window.pessoaAtual.id, null);
 
       lancamentoSucesso.textContent = 'Lançamento criado com sucesso.';
       lancamentoSucesso.hidden = false;
@@ -997,10 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
     contasFiltroTitulo.value = '';
     popularSeletorMes(contasFiltroMes, true);
     popularSeletorAno(contasFiltroAno);
-    // Mês fica em "Todos" por padrão aqui — essa tela é de consulta
-    // geral, não de "o que preciso fazer agora" (diferente de Pagar
-    // Parcelas, que já abre no mês atual).
-    contasFiltroMes.value = '';
+    definirMesAnoAtual(contasFiltroMes, contasFiltroAno);
     popularSelectComOpcaoTodos(contasFiltroCategoria, categoriasCache, 'Todas');
     popularSelectComOpcaoTodos(contasFiltroMeioPagamento, meiosPagamentoCache, 'Todos');
     popularSelectComOpcaoTodos(contasFiltroPessoa, pessoasParaRateio, 'Todas');
@@ -1065,13 +1073,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    monitorTitulo.value = '';
     popularSeletorMes(monitorMes, true);
     popularSeletorAno(monitorAno);
-    // Mês fica em "Todos" por padrão — é uma tela de consulta geral
-    // ("quanto Fulano deve", "quanto devo no cartão X"), não de
-    // "o que vence agora" (diferente de Pagar Parcelas).
-    monitorMes.value = '';
+    definirMesAnoAtual(monitorMes, monitorAno);
     monitorStatus.value = 'Aberto';
     popularSelectComOpcaoTodos(monitorCategoria, categoriasCache, 'Todas');
     popularSelectComOpcaoTodos(monitorMeioPagamento, meiosPagamentoCache, 'Todos');
@@ -1094,7 +1098,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const resultado = await apiGet('monitoramento', {
-        titulo: monitorTitulo.value,
         mes: obterMesAnoValor(monitorMes, monitorAno),
         categoriaId: monitorCategoria.value,
         meioPagamentoId: monitorMeioPagamento.value,

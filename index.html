@@ -265,9 +265,6 @@
             <details class="detalhe-secao">
               <summary>Ajustar valor de uma parcela</summary>
               <form id="form-ajustar-parcela">
-                <label for="ajustar-numeroParcela">Parcela</label>
-                <select id="ajustar-numeroParcela" required></select>
-
                 <label for="ajustar-novoValor">Novo valor</label>
                 <input type="number" id="ajustar-novoValor" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
 
@@ -275,7 +272,13 @@
                 <select id="ajustar-modo" required>
                   <option value="apenasEsta">Só nessa parcela (ex: conta que variou 1 mês)</option>
                   <option value="emDiante">Nessa e nas seguintes (ex: reajuste permanente)</option>
+                  <option value="todas">Todas as parcelas, inclusive já pagas (ex: valor errado desde o início)</option>
                 </select>
+
+                <div id="ajustar-numeroParcela-linha">
+                  <label for="ajustar-numeroParcela">Parcela</label>
+                  <select id="ajustar-numeroParcela" required></select>
+                </div>
 
                 <button type="submit" class="btn-primario">Aplicar ajuste</button>
                 <p id="ajustar-parcela-erro" class="mensagem-erro" hidden></p>
@@ -364,10 +367,7 @@
         <button type="button" id="btn-voltar-monitoramento" class="btn-secundario">← Voltar</button>
         <h2 class="titulo-secao">Monitoramento</h2>
 
-        <label for="monitor-titulo">Título</label>
-        <input type="text" id="monitor-titulo" placeholder="Buscar por descrição">
-
-        <div class="campo-grupo">
+        <div class="campo-grupo campo-grupo-3">
           <div>
             <label for="monitor-mes">Mês</label>
             <div class="campo-mes-ano">
@@ -383,23 +383,26 @@
               <option value="Todos">Todas</option>
             </select>
           </div>
-        </div>
-
-        <div class="campo-grupo">
           <div>
             <label for="monitor-categoria">Categoria</label>
             <select id="monitor-categoria"><option value="">Todas</option></select>
           </div>
+        </div>
+
+        <div class="campo-grupo campo-grupo-3">
           <div>
             <label for="monitor-meioPagamento">Meio de pagamento</label>
             <select id="monitor-meioPagamento"><option value="">Todos</option></select>
           </div>
+          <div>
+            <label for="monitor-pessoa">Pessoa</label>
+            <select id="monitor-pessoa"><option value="">Todas</option></select>
+          </div>
+          <div class="campo-botao-buscar">
+            <button type="button" id="btn-buscar-monitoramento" class="btn-primario">Buscar</button>
+          </div>
         </div>
 
-        <label for="monitor-pessoa">Pessoa</label>
-        <select id="monitor-pessoa"><option value="">Todas</option></select>
-
-        <button type="button" id="btn-buscar-monitoramento" class="btn-primario">Buscar</button>
         <p id="monitor-erro" class="mensagem-erro" hidden></p>
         <p id="monitor-carregando" class="estado-vazio" hidden>Carregando...</p>
 

@@ -317,7 +317,13 @@ form select {
 #contas-filtro-ano,
 #contas-filtro-categoria,
 #contas-filtro-meioPagamento,
-#contas-filtro-pessoa {
+#contas-filtro-pessoa,
+#monitor-mes,
+#monitor-ano,
+#monitor-status,
+#monitor-categoria,
+#monitor-meioPagamento,
+#monitor-pessoa {
   font-size: 1.05rem;
   padding: 12px 14px;
   border: 1px solid var(--color-border);
@@ -325,6 +331,29 @@ form select {
   background: var(--color-surface);
   color: var(--color-text);
   width: 100%;
+}
+
+/* Monitoramento pediu mais respiro vertical que os demais filtros. */
+#monitor-mes,
+#monitor-ano,
+#monitor-status,
+#monitor-categoria,
+#monitor-meioPagamento,
+#monitor-pessoa {
+  padding: 14px 14px;
+}
+
+.campo-grupo-3 > div {
+  margin-bottom: 12px;
+}
+
+.campo-botao-buscar {
+  display: flex;
+}
+
+.campo-botao-buscar .btn-primario {
+  width: 100%;
+  margin-top: 0;
 }
 
 .opcoes-modo-valor {
