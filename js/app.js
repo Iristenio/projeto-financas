@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const lancValorTotal = document.getElementById('lanc-valorTotal');
   const lancValorParcela = document.getElementById('lanc-valorParcela');
   const lancQtdParcelas = document.getElementById('lanc-qtdParcelas');
-  const lancMesFaturaInicial = document.getElementById('lanc-mesFaturaInicial');
+  const lancMesFaturaInicialMes = document.getElementById('lanc-mesFaturaInicial-mes');
+  const lancMesFaturaInicialAno = document.getElementById('lanc-mesFaturaInicial-ano');
   const lancData = document.getElementById('lanc-data');
   const lancamentoErro = document.getElementById('lancamento-erro');
   const lancamentoSucesso = document.getElementById('lancamento-sucesso');
@@ -97,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const telaPagarParcela = document.getElementById('tela-pagar-parcela');
   const btnVoltarPagarParcela = document.getElementById('btn-voltar-pagar-parcela');
   const pagarMes = document.getElementById('pagar-mes');
+  const pagarAno = document.getElementById('pagar-ano');
   const pagarMeioPagamento = document.getElementById('pagar-meioPagamento');
   const pagarCategoria = document.getElementById('pagar-categoria');
   const btnBuscarParcelas = document.getElementById('btn-buscar-parcelas');
@@ -146,6 +148,52 @@ document.addEventListener('DOMContentLoaded', () => {
   function mesAtual() {
     const hoje = new Date();
     return hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+  }
+
+  const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  // Substitui o <input type="month"> nativo (formato ambíguo, cada
+  // navegador mostra diferente) por 2 selects claros — mês por
+  // extenso + ano. O intervalo de anos cobre parcelamentos longos
+  // (ex: financiamento de carro em 60x passa de 5 anos).
+  function popularSeletorMes(select, comOpcaoTodos) {
+    select.innerHTML = '';
+    if (comOpcaoTodos) {
+      const opcaoTodos = document.createElement('option');
+      opcaoTodos.value = '';
+      opcaoTodos.textContent = 'Todos os meses';
+      select.appendChild(opcaoTodos);
+    }
+    NOMES_MESES.forEach((nome, index) => {
+      const option = document.createElement('option');
+      option.value = String(index + 1);
+      option.textContent = nome;
+      select.appendChild(option);
+    });
+  }
+
+  function popularSeletorAno(select) {
+    select.innerHTML = '';
+    const anoAtual = new Date().getFullYear();
+    for (let ano = anoAtual - 2; ano <= anoAtual + 8; ano++) {
+      const option = document.createElement('option');
+      option.value = String(ano);
+      option.textContent = String(ano);
+      select.appendChild(option);
+    }
+  }
+
+  function definirMesAnoAtual(selectMes, selectAno) {
+    const hoje = new Date();
+    selectMes.value = String(hoje.getMonth() + 1);
+    selectAno.value = String(hoje.getFullYear());
+  }
+
+  // Combina os 2 selects num "yyyy-MM" pra API. Se o mês estiver
+  // vazio (opção "Todos os meses"), devolve '' (sem filtro).
+  function obterMesAnoValor(selectMes, selectAno) {
+    if (!selectMes.value) return '';
+    return selectAno.value + '-' + selectMes.value.padStart(2, '0');
   }
 
   // O campo do formulário pede "mês da parcela atual" (mais
@@ -687,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
       descricao: document.getElementById('lanc-descricao').value,
       valorTotal: parseFloat(lancValorTotal.value),
       qtdParcelas: Number(lancQtdParcelas.value),
-      mesFaturaInicial: subtrairMeses(lancMesFaturaInicial.value, Number(document.getElementById('lanc-parcelaReferencia').value) - 1),
+      mesFaturaInicial: subtrairMeses(obterMesAnoValor(lancMesFaturaInicialMes, lancMesFaturaInicialAno), Number(document.getElementById('lanc-parcelaReferencia').value) - 1),
       parcelaReferencia: Number(document.getElementById('lanc-parcelaReferencia').value),
       data: lancData.value,
       recorrente: document.getElementById('lanc-recorrente').checked,
@@ -700,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       formLancamento.reset();
       preencherDataHoje(lancData);
-      lancMesFaturaInicial.value = mesAtual();
+      definirMesAnoAtual(lancMesFaturaInicialMes, lancMesFaturaInicialAno);
       lancQtdParcelas.value = 1;
       document.getElementById('lanc-parcelaReferencia').value = 1;
       document.querySelector('input[name="lancModoValor"][value="total"]').checked = true;
@@ -827,7 +875,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (alvo === 'lancamentos' && !listasLancamentoCarregadas) {
         listasLancamentoCarregadas = true;
         preencherDataHoje(lancData);
-        lancMesFaturaInicial.value = mesAtual();
+        popularSeletorMes(lancMesFaturaInicialMes);
+        popularSeletorAno(lancMesFaturaInicialAno);
+        definirMesAnoAtual(lancMesFaturaInicialMes, lancMesFaturaInicialAno);
         carregarListasLancamento().catch((erro) => {
           lancamentoErro.textContent = 'Não foi possível carregar categorias/meios de pagamento/pessoas: ' + erro.message;
           lancamentoErro.hidden = false;
@@ -929,12 +979,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     popularSelectComOpcaoTodos(pagarMeioPagamento, meiosPagamentoCache, 'Todos');
     popularSelectComOpcaoTodos(pagarCategoria, categoriasCache, 'Todas');
-    // Mês fica em branco por padrão (= sem filtro de mês) — igual
-    // meio de pagamento/categoria já ficavam em "Todos"/"Todas".
-    // Antes vinha pré-preenchido com o mês atual, o que fazia a
-    // busca "sem filtro" na prática esconder tudo que não vencesse
-    // neste mês, parecendo que não havia nada cadastrado.
-    pagarMes.value = '';
+    // Mês/ano vêm pré-preenchidos com o atual (visível nos selects,
+    // dá pra ver e trocar), com "Todos os meses" disponível caso
+    // queira ver tudo de uma vez, cruzando vários anos.
+    popularSeletorMes(pagarMes, true);
+    popularSeletorAno(pagarAno);
+    definirMesAnoAtual(pagarMes, pagarAno);
     preencherDataHoje(pagarDataPagamento);
   }
 
@@ -1245,7 +1295,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function atualizarTotalSelecionado() {
-    const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));
+    // Sincroniza o checkbox "de conta" (cabeçalho do grupo) com o
+    // estado das parcelas dela: todas marcadas -> marcado; nenhuma
+    // -> desmarcado; só algumas -> indeterminado (o "meio-termo"
+    // visual padrão de checkbox).
+    listaParcelasPagar.querySelectorAll('.conta-pagar-grupo').forEach((grupo) => {
+      const checksDoGrupo = Array.from(grupo.querySelectorAll('.parcela-check'));
+      const marcados = checksDoGrupo.filter((c) => c.checked).length;
+      const checkConta = grupo.querySelector('.conta-select-todas');
+      checkConta.checked = marcados > 0 && marcados === checksDoGrupo.length;
+      checkConta.indeterminate = marcados > 0 && marcados < checksDoGrupo.length;
+    });
+
+    const checks = Array.from(listaParcelasPagar.querySelectorAll('.parcela-check'));
     const selecionados = checks.filter((c) => c.checked);
     const total = selecionados.reduce((soma, c) => soma + Number(c.dataset.valor), 0);
     pagarTotalSelecionado.textContent = selecionados.length + ' selecionada(s) · Total: ' + formatarValor(total);
@@ -1254,30 +1316,76 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buscarParcelasAbertas() {
     const parcelas = await apiGet('parcelas', {
       status: 'Aberto',
-      mes: pagarMes.value,
+      mes: obterMesAnoValor(pagarMes, pagarAno),
       meioPagamentoId: pagarMeioPagamento.value,
       categoriaId: pagarCategoria.value,
     });
 
-    listaParcelasPagar.innerHTML = '';
+    // Agrupa por conta (Lançamento) — dá pra selecionar uma parcela
+    // avulsa ou a conta inteira de uma vez, cobrindo tanto "pagar
+    // uma parcela específica" quanto "pagar a fatura toda do mês".
+    const grupos = new Map();
     parcelas.forEach((p) => {
+      const chave = p.Lancamento_ID;
+      if (!grupos.has(chave)) {
+        grupos.set(chave, { descricao: p.descricao, categoriaId: p.categoriaId, meioPagamentoId: p.meioPagamentoId, parcelas: [] });
+      }
+      grupos.get(chave).parcelas.push(p);
+    });
+
+    const gruposOrdenados = Array.from(grupos.values()).sort((a, b) => new Date(a.parcelas[0]['Mês Vencimento']) - new Date(b.parcelas[0]['Mês Vencimento']));
+
+    listaParcelasPagar.innerHTML = '';
+    gruposOrdenados.forEach((grupo) => {
       const li = document.createElement('li');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.value = p.ID;
-      checkbox.dataset.valor = p.Valor;
-      checkbox.addEventListener('change', atualizarTotalSelecionado);
+      li.className = 'conta-pagar-grupo';
 
-      const info = document.createElement('span');
-      info.className = 'parcela-pagar-info';
-      info.textContent =
-        (p.descricao || '(sem descrição)') + ' · ' + (mapaCategorias[p.categoriaId] || '?') + ' · Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']);
+      const totalGrupo = grupo.parcelas.reduce((soma, p) => soma + Number(p.Valor), 0);
 
-      const valor = document.createElement('span');
-      valor.className = 'parcela-pagar-valor';
-      valor.textContent = formatarValor(p.Valor);
+      const header = document.createElement('div');
+      header.className = 'conta-pagar-header';
+      const labelConta = document.createElement('label');
+      labelConta.className = 'conta-pagar-check';
+      const checkConta = document.createElement('input');
+      checkConta.type = 'checkbox';
+      checkConta.className = 'conta-select-todas';
+      const nomeConta = document.createElement('strong');
+      nomeConta.textContent = grupo.descricao || '(sem descrição)';
+      labelConta.append(checkConta, nomeConta);
+      const infoConta = document.createElement('span');
+      infoConta.className = 'conta-pagar-info';
+      infoConta.textContent = (mapaCategorias[grupo.categoriaId] || '?') + ' · ' + (mapaMeiosPagamento[grupo.meioPagamentoId] || '?');
+      const totalConta = document.createElement('span');
+      totalConta.className = 'conta-pagar-total';
+      totalConta.textContent = formatarValor(totalGrupo) + ' em aberto';
+      header.append(labelConta, infoConta, totalConta);
 
-      li.append(checkbox, info, valor);
+      checkConta.addEventListener('change', () => {
+        parcelasUl.querySelectorAll('.parcela-check').forEach((c) => {
+          c.checked = checkConta.checked;
+        });
+        atualizarTotalSelecionado();
+      });
+
+      const parcelasUl = document.createElement('ul');
+      parcelasUl.className = 'conta-pagar-parcelas';
+      grupo.parcelas.forEach((p) => {
+        const liParcela = document.createElement('li');
+        const labelParcela = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'parcela-check';
+        checkbox.value = p.ID;
+        checkbox.dataset.valor = p.Valor;
+        checkbox.addEventListener('change', atualizarTotalSelecionado);
+        const texto = document.createElement('span');
+        texto.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
+        labelParcela.append(checkbox, texto);
+        liParcela.appendChild(labelParcela);
+        parcelasUl.appendChild(liParcela);
+      });
+
+      li.append(header, parcelasUl);
       listaParcelasPagar.appendChild(li);
     });
 
@@ -1300,7 +1408,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnSelecionarTodasParcelas.addEventListener('click', () => {
-    const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));
+    const checks = Array.from(listaParcelasPagar.querySelectorAll('.parcela-check'));
     const todasMarcadas = checks.length > 0 && checks.every((c) => c.checked);
     checks.forEach((c) => {
       c.checked = !todasMarcadas;
@@ -1313,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pagarErro.hidden = true;
     pagarSucesso.hidden = true;
 
-    const parcelaIds = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]:checked')).map((c) => Number(c.value));
+    const parcelaIds = Array.from(listaParcelasPagar.querySelectorAll('.parcela-check:checked')).map((c) => Number(c.value));
     if (parcelaIds.length === 0) {
       pagarErro.textContent = 'Selecione ao menos uma parcela.';
       pagarErro.hidden = false;

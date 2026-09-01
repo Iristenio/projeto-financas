@@ -22,7 +22,7 @@
 
   <nav id="menu-lateral" class="menu-lateral" hidden>
     <button type="button" class="menu-item" data-tela="contas-lancadas">Contas Lançadas</button>
-    <button type="button" class="menu-item" data-tela="pagar-parcela">Parcelas</button>
+    <button type="button" class="menu-item" data-tela="pagar-parcela">Pagar Parcelas</button>
     <button type="button" class="menu-item" data-tela="recorrentes">Recorrentes</button>
     <button type="button" class="menu-item" data-tela="cadastros">Cadastros</button>
   </nav>
@@ -130,8 +130,11 @@
                 <input type="number" id="lanc-qtdParcelas" name="qtdParcelas" min="1" step="1" value="1" required>
               </div>
               <div>
-                <label for="lanc-mesFaturaInicial">Mês da parcela atual</label>
-                <input type="month" id="lanc-mesFaturaInicial" name="mesFaturaInicial" required>
+                <label for="lanc-mesFaturaInicial-mes">Mês da parcela atual</label>
+                <div class="campo-mes-ano">
+                  <select id="lanc-mesFaturaInicial-mes" required></select>
+                  <select id="lanc-mesFaturaInicial-ano" required></select>
+                </div>
               </div>
             </div>
 
@@ -292,7 +295,10 @@
         <div class="campo-grupo">
           <div>
             <label for="pagar-mes">Mês</label>
-            <input type="month" id="pagar-mes">
+            <div class="campo-mes-ano">
+              <select id="pagar-mes"></select>
+              <select id="pagar-ano"></select>
+            </div>
           </div>
           <div>
             <label for="pagar-meioPagamento">Meio de pagamento</label>
