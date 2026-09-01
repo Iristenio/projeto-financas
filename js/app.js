@@ -50,12 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSalvarLancamento = formLancamento.querySelector('.btn-salvar');
   const textoBtnSalvarLancamento = btnSalvarLancamento.textContent;
 
-  const subtabButtons = document.querySelectorAll('.subtab-button');
-  const subtabPanels = {
-    nova: document.getElementById('subtab-nova'),
-    lista: document.getElementById('subtab-lista'),
-    detalhe: document.getElementById('subtab-detalhe'),
-  };
+  const telaContasLancadas = document.getElementById('tela-contas-lancadas');
+  const btnVoltarContasLancadas = document.getElementById('btn-voltar-contas-lancadas');
+  const contasLancadasLista = document.getElementById('subtab-lista');
+  const contasLancadasDetalhe = document.getElementById('subtab-detalhe');
   const listaLancamentos = document.getElementById('lista-lancamentos');
   const lancamentosVazio = document.getElementById('lancamentos-vazio');
   const lancamentosCarregando = document.getElementById('lancamentos-carregando');
@@ -133,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const excluirLancamentoErro = document.getElementById('excluir-lancamento-erro');
 
   let listasLancamentoCarregadas = false;
-  let listaLancamentosCarregada = false;
   let pessoasParaRateio = [];
   let categoriasCache = [];
   let meiosPagamentoCache = [];
@@ -412,30 +409,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  subtabButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const alvo = button.dataset.subtab;
-      subtabButtons.forEach((b) => b.setAttribute('aria-selected', b === button ? 'true' : 'false'));
-      Object.entries(subtabPanels).forEach(([nome, painel]) => {
-        painel.hidden = nome !== alvo;
-      });
-      if (alvo === 'lista' && !listaLancamentosCarregada) {
-        listaLancamentosCarregada = true;
-        renderListaLancamentos();
-      }
-    });
-  });
-
-  function mostrarSubtab(nome) {
-    Object.entries(subtabPanels).forEach(([n, painel]) => {
-      painel.hidden = n !== nome;
-    });
-    subtabButtons.forEach((b) => b.setAttribute('aria-selected', b.dataset.subtab === nome ? 'true' : 'false'));
+  // Dentro da tela "Contas Lançadas" há só 2 vistas internas
+  // (lista / detalhe de um lançamento) — não é mais um sistema de
+  // sub-abas, é só um alternador simples entre as duas.
+  function mostrarContasSubView(nome) {
+    contasLancadasLista.hidden = nome !== 'lista';
+    contasLancadasDetalhe.hidden = nome !== 'detalhe';
   }
 
   async function abrirDetalheLancamento(id, manterMensagens) {
     lancamentoDetalheId = id;
-    mostrarSubtab('detalhe');
+    mostrarContasSubView('detalhe');
     detalheErro.hidden = true;
     detalheSaldoPessoas.innerHTML = '';
     detalheParcelas.innerHTML = '<li>Carregando...</li>';
@@ -515,10 +499,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnVoltarLista.addEventListener('click', () => {
     lancamentoDetalheId = null;
-    listaLancamentosCarregada = false;
-    mostrarSubtab('lista');
+    mostrarContasSubView('lista');
     renderListaLancamentos();
-    listaLancamentosCarregada = true;
   });
 
   editarBtnAdicionarPessoa.addEventListener('click', () => {
@@ -541,7 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       editarLancamentoSucesso.textContent = 'Alterações salvas.';
       editarLancamentoSucesso.hidden = false;
-      listaLancamentosCarregada = false;
       await abrirDetalheLancamento(lancamentoDetalheId, true);
     } catch (erro) {
       editarLancamentoErro.textContent = erro.message;
@@ -565,7 +546,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ajustarParcelaSucesso.textContent = 'Parcela(s) ajustada(s).';
       ajustarParcelaSucesso.hidden = false;
       ajustarNovoValor.value = '';
-      listaLancamentosCarregada = false;
       await abrirDetalheLancamento(lancamentoDetalheId, true);
     } catch (erro) {
       ajustarParcelaErro.textContent = erro.message;
@@ -596,7 +576,6 @@ document.addEventListener('DOMContentLoaded', () => {
       anteciparParcelaSucesso.textContent = 'Parcela(s) antecipada(s).';
       anteciparParcelaSucesso.hidden = false;
       anteciparObservacao.value = '';
-      listaLancamentosCarregada = false;
       await abrirDetalheLancamento(lancamentoDetalheId, true);
     } catch (erro) {
       anteciparParcelaErro.textContent = erro.message;
@@ -611,12 +590,10 @@ document.addEventListener('DOMContentLoaded', () => {
     excluirLancamentoErro.hidden = true;
     try {
       await apiPost('lancamentos', 'excluir', { id: lancamentoDetalheId, modo: modo });
-      listaLancamentosCarregada = false;
       if (modo === 'tudo') {
         lancamentoDetalheId = null;
-        mostrarSubtab('lista');
+        mostrarContasSubView('lista');
         renderListaLancamentos();
-        listaLancamentosCarregada = true;
       } else {
         await abrirDetalheLancamento(lancamentoDetalheId, true);
       }
@@ -719,7 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
       aplicarModoValorLancamento();
       gerenciadorRateioNova.limparTudo();
       gerenciadorRateioNova.criarLinha(null, null);
-      listaLancamentosCarregada = false;
 
       lancamentoSucesso.textContent = 'Lançamento criado com sucesso.';
       lancamentoSucesso.hidden = false;
@@ -807,15 +783,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Todas as telas de topo do app — as 3 abas fixas + as telas
+  // abertas pelo menu ☰. Só uma pode estar visível de cada vez;
+  // esconderTodasAsTelas() é o único lugar que sabe a lista
+  // completa, pra nunca ficar tela acumulada por esquecimento.
+  function esconderTodasAsTelas() {
+    Object.values(tabPanels).forEach((painel) => {
+      painel.hidden = true;
+    });
+    telaContasLancadas.hidden = true;
+    telaPagarParcela.hidden = true;
+    telaRecorrentes.hidden = true;
+    telaCadastros.hidden = true;
+    tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
+    containerPrincipal.classList.remove('container-larga');
+  }
+
   tabButtons.forEach((button) => {
     button.addEventListener('click', () => {
       const alvo = button.dataset.tab;
 
-      tabButtons.forEach((b) => b.setAttribute('aria-selected', b === button ? 'true' : 'false'));
-      Object.entries(tabPanels).forEach(([nome, painel]) => {
-        painel.hidden = nome !== alvo;
-      });
-
+      esconderTodasAsTelas();
+      tabPanels[alvo].hidden = false;
+      button.setAttribute('aria-selected', 'true');
       containerPrincipal.classList.toggle('container-larga', alvo === 'lancamentos');
 
       if (alvo === 'lancar') {
@@ -850,7 +840,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.menu-item').forEach((item) => {
     item.addEventListener('click', () => {
       fecharMenu();
-      if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
+      if (item.dataset.tela === 'contas-lancadas') abrirTelaContasLancadas();
+      else if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
       else if (item.dataset.tela === 'recorrentes') abrirTelaRecorrentes();
       else if (item.dataset.tela === 'cadastros') abrirTelaCadastros();
     });
@@ -866,13 +857,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  function esconderAbasEMostrar(elemento) {
-    Object.values(tabPanels).forEach((painel) => {
-      painel.hidden = true;
-    });
-    tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
-    containerPrincipal.classList.remove('container-larga');
+  function esconderAbasEMostrar(elemento, telaLarga) {
+    esconderTodasAsTelas();
     elemento.hidden = false;
+    if (telaLarga) containerPrincipal.classList.add('container-larga');
   }
 
   function voltarParaAbaLancar() {
@@ -889,13 +877,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  async function abrirTelaContasLancadas() {
+    esconderAbasEMostrar(telaContasLancadas, true);
+    mostrarContasSubView('lista');
+
+    if (!listasLancamentoCarregadas) {
+      listasLancamentoCarregadas = true;
+      try {
+        await carregarListasLancamento();
+      } catch (erro) {
+        lancamentosVazio.textContent = 'Não foi possível carregar categorias/meios de pagamento: ' + erro.message;
+        lancamentosVazio.hidden = false;
+      }
+    }
+    renderListaLancamentos();
+  }
+
+  btnVoltarContasLancadas.addEventListener('click', () => {
+    telaContasLancadas.hidden = true;
+    voltarParaAbaLancar();
+  });
+
   async function abrirTelaPagarParcela() {
-    Object.values(tabPanels).forEach((painel) => {
-      painel.hidden = true;
-    });
-    tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
-    containerPrincipal.classList.remove('container-larga');
-    telaPagarParcela.hidden = false;
+    esconderAbasEMostrar(telaPagarParcela);
 
     pagarBuscaErro.hidden = true;
     pagarErro.hidden = true;
@@ -990,7 +994,6 @@ document.addEventListener('DOMContentLoaded', () => {
               lancamentoId: item.lancamentoId,
               qtdNovasParcelas: Number(inputQtd.value) || 12,
             });
-            listaLancamentosCarregada = false;
             renderRecorrentes();
           } catch (err) {
             erro.textContent = err.message;
@@ -1305,7 +1308,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await apiPost('parcelas', 'pagar', { parcelaIds: parcelaIds, dataPagamento: pagarDataPagamento.value });
       pagarSucesso.textContent = parcelaIds.length + ' parcela(s) marcada(s) como paga(s).';
       pagarSucesso.hidden = false;
-      listaLancamentosCarregada = false;
       await buscarParcelasAbertas();
     } catch (erro) {
       pagarErro.textContent = erro.message;

@@ -89,6 +89,10 @@ body {
   z-index: 20;
 }
 
+.menu-overlay[hidden] {
+  display: none;
+}
+
 .menu-lateral {
   position: fixed;
   top: 0;
@@ -103,6 +107,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.menu-lateral[hidden] {
+  display: none;
 }
 
 .menu-item {
@@ -155,7 +163,7 @@ body {
   margin-bottom: 6px;
 }
 
-.tab-button, .subtab-button, .cadastro-tab-button {
+.tab-button, .cadastro-tab-button {
   flex: 1;
   padding: 10px 0;
   border: none;
@@ -167,12 +175,12 @@ body {
   cursor: pointer;
 }
 
-.tab-button[aria-selected="true"], .subtab-button[aria-selected="true"], .cadastro-tab-button[aria-selected="true"] {
+.tab-button[aria-selected="true"], .cadastro-tab-button[aria-selected="true"] {
   background: var(--color-primary);
   color: var(--color-primary-text);
 }
 
-.tab-panel[hidden], .subtab-panel[hidden], .cadastro-tab-panel[hidden] {
+.tab-panel[hidden], .cadastro-tab-panel[hidden] {
   display: none;
 }
 

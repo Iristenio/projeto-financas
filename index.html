@@ -21,6 +21,7 @@
   </header>
 
   <nav id="menu-lateral" class="menu-lateral" hidden>
+    <button type="button" class="menu-item" data-tela="contas-lancadas">Contas Lançadas</button>
     <button type="button" class="menu-item" data-tela="pagar-parcela">Parcelas</button>
     <button type="button" class="menu-item" data-tela="recorrentes">Recorrentes</button>
     <button type="button" class="menu-item" data-tela="cadastros">Cadastros</button>
@@ -91,18 +92,98 @@
         </section>
 
         <section id="tab-lancamentos" class="tab-panel" hidden role="tabpanel">
-          <nav class="subtabs" role="tablist">
-            <button type="button" class="subtab-button" data-subtab="nova" role="tab" aria-selected="true">Nova Conta</button>
-            <button type="button" class="subtab-button" data-subtab="lista" role="tab" aria-selected="false">Contas Lançadas</button>
-          </nav>
+          <form id="form-lancamento">
+            <div class="campo-grupo">
+              <div>
+                <label for="lanc-categoria">Categoria</label>
+                <select id="lanc-categoria" name="categoriaId" required></select>
+              </div>
+              <div>
+                <label for="lanc-meioPagamento">Meio de pagamento</label>
+                <select id="lanc-meioPagamento" name="meioPagamentoId" required></select>
+              </div>
+            </div>
 
-          <div id="subtab-lista" class="subtab-panel" hidden>
+            <label for="lanc-descricao">Descrição</label>
+            <input type="text" id="lanc-descricao" name="descricao" placeholder="Ex: compra do ventilador" required>
+
+            <label>Como prefere informar o valor?</label>
+            <div class="opcoes-modo-valor">
+              <label class="campo-checkbox"><input type="radio" name="lancModoValor" value="total" checked> Valor Total</label>
+              <label class="campo-checkbox"><input type="radio" name="lancModoValor" value="parcela"> Valor da Parcela</label>
+            </div>
+
+            <div class="campo-grupo">
+              <div>
+                <label for="lanc-valorTotal">Valor total</label>
+                <input type="number" id="lanc-valorTotal" name="valorTotal" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+              </div>
+              <div>
+                <label for="lanc-valorParcela">Valor da parcela</label>
+                <input type="number" id="lanc-valorParcela" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" disabled>
+              </div>
+            </div>
+
+            <div class="campo-grupo">
+              <div>
+                <label for="lanc-qtdParcelas">Qtd. parcelas</label>
+                <input type="number" id="lanc-qtdParcelas" name="qtdParcelas" min="1" step="1" value="1" required>
+              </div>
+              <div>
+                <label for="lanc-mesFaturaInicial">Mês da 1ª parcela na fatura</label>
+                <input type="month" id="lanc-mesFaturaInicial" name="mesFaturaInicial" required>
+              </div>
+            </div>
+
+            <div class="campo-grupo">
+              <div>
+                <label for="lanc-parcelaReferencia">Nº da parcela atual</label>
+                <input type="number" id="lanc-parcelaReferencia" name="parcelaReferencia" min="1" step="1" value="1" required>
+              </div>
+              <div>
+                <label for="lanc-data">Data da compra</label>
+                <input type="date" id="lanc-data" name="data" required>
+              </div>
+            </div>
+            <p class="campo-ajuda">Se a compra já vem sendo paga há alguns meses, informe o número da parcela referente ao mês atual — as anteriores entram como já pagas.</p>
+
+            <label class="campo-checkbox" for="lanc-recorrente">
+              <input type="checkbox" id="lanc-recorrente" name="recorrente">
+              É uma conta recorrente (assinatura, sem fim definido)
+            </label>
+
+            <fieldset class="rateio-fieldset">
+              <legend>Rateio entre pessoas</legend>
+              <div class="cabecalho-rateio">
+                <span>Pessoa</span>
+                <span>Parcela (R$)</span>
+                <span>Total (R$)</span>
+                <span></span>
+              </div>
+              <div id="rateio-lista"></div>
+              <div class="botoes-rateio">
+                <button type="button" id="btn-adicionar-pessoa" class="btn-secundario">+ Adicionar pessoa</button>
+                <button type="button" id="btn-dividir-igual" class="btn-secundario">Dividir igualmente</button>
+              </div>
+              <p id="rateio-soma" class="rateio-soma"></p>
+            </fieldset>
+
+            <button type="submit" class="btn-primario btn-salvar" disabled>Criar lançamento</button>
+            <p id="lancamento-erro" class="mensagem-erro" hidden></p>
+            <p id="lancamento-sucesso" class="mensagem-sucesso" hidden></p>
+          </form>
+        </section>
+
+        <section id="tela-contas-lancadas" hidden>
+          <div id="subtab-lista">
+            <button type="button" id="btn-voltar-contas-lancadas" class="btn-secundario">← Voltar</button>
+            <h2 class="titulo-secao">Contas Lançadas</h2>
             <ul id="lista-lancamentos" class="lista-lancamentos"></ul>
             <p id="lancamentos-vazio" class="estado-vazio" hidden>Nenhum lançamento ainda.</p>
             <p id="lancamentos-carregando" class="estado-vazio">Carregando...</p>
           </div>
 
-          <div id="subtab-detalhe" class="subtab-panel" hidden>
+          <div id="subtab-detalhe" hidden>
             <button type="button" id="btn-voltar-lista" class="btn-secundario">← Voltar para a lista</button>
 
             <h2 id="detalhe-titulo" class="titulo-secao"></h2>
@@ -200,89 +281,6 @@
               </div>
               <p id="excluir-lancamento-erro" class="mensagem-erro" hidden></p>
             </details>
-          </div>
-
-          <div id="subtab-nova" class="subtab-panel">
-          <form id="form-lancamento">
-            <div class="campo-grupo">
-              <div>
-                <label for="lanc-categoria">Categoria</label>
-                <select id="lanc-categoria" name="categoriaId" required></select>
-              </div>
-              <div>
-                <label for="lanc-meioPagamento">Meio de pagamento</label>
-                <select id="lanc-meioPagamento" name="meioPagamentoId" required></select>
-              </div>
-            </div>
-
-            <label for="lanc-descricao">Descrição</label>
-            <input type="text" id="lanc-descricao" name="descricao" placeholder="Ex: compra do ventilador" required>
-
-            <label>Como prefere informar o valor?</label>
-            <div class="opcoes-modo-valor">
-              <label class="campo-checkbox"><input type="radio" name="lancModoValor" value="total" checked> Valor Total</label>
-              <label class="campo-checkbox"><input type="radio" name="lancModoValor" value="parcela"> Valor da Parcela</label>
-            </div>
-
-            <div class="campo-grupo">
-              <div>
-                <label for="lanc-valorTotal">Valor total</label>
-                <input type="number" id="lanc-valorTotal" name="valorTotal" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
-              </div>
-              <div>
-                <label for="lanc-valorParcela">Valor da parcela</label>
-                <input type="number" id="lanc-valorParcela" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" disabled>
-              </div>
-            </div>
-
-            <div class="campo-grupo">
-              <div>
-                <label for="lanc-qtdParcelas">Qtd. parcelas</label>
-                <input type="number" id="lanc-qtdParcelas" name="qtdParcelas" min="1" step="1" value="1" required>
-              </div>
-              <div>
-                <label for="lanc-mesFaturaInicial">Mês da 1ª parcela na fatura</label>
-                <input type="month" id="lanc-mesFaturaInicial" name="mesFaturaInicial" required>
-              </div>
-            </div>
-
-            <div class="campo-grupo">
-              <div>
-                <label for="lanc-parcelaReferencia">Nº da parcela atual</label>
-                <input type="number" id="lanc-parcelaReferencia" name="parcelaReferencia" min="1" step="1" value="1" required>
-              </div>
-              <div>
-                <label for="lanc-data">Data da compra</label>
-                <input type="date" id="lanc-data" name="data" required>
-              </div>
-            </div>
-            <p class="campo-ajuda">Se a compra já vem sendo paga há alguns meses, informe o número da parcela referente ao mês atual — as anteriores entram como já pagas.</p>
-
-            <label class="campo-checkbox" for="lanc-recorrente">
-              <input type="checkbox" id="lanc-recorrente" name="recorrente">
-              É uma conta recorrente (assinatura, sem fim definido)
-            </label>
-
-            <fieldset class="rateio-fieldset">
-              <legend>Rateio entre pessoas</legend>
-              <div class="cabecalho-rateio">
-                <span>Pessoa</span>
-                <span>Parcela (R$)</span>
-                <span>Total (R$)</span>
-                <span></span>
-              </div>
-              <div id="rateio-lista"></div>
-              <div class="botoes-rateio">
-                <button type="button" id="btn-adicionar-pessoa" class="btn-secundario">+ Adicionar pessoa</button>
-                <button type="button" id="btn-dividir-igual" class="btn-secundario">Dividir igualmente</button>
-              </div>
-              <p id="rateio-soma" class="rateio-soma"></p>
-            </fieldset>
-
-            <button type="submit" class="btn-primario btn-salvar" disabled>Criar lançamento</button>
-            <p id="lancamento-erro" class="mensagem-erro" hidden></p>
-            <p id="lancamento-sucesso" class="mensagem-sucesso" hidden></p>
-          </form>
           </div>
         </section>
       </div>
