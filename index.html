@@ -126,11 +126,8 @@
                 <input type="number" id="lanc-qtdParcelas" name="qtdParcelas" min="1" step="1" value="1" required>
               </div>
               <div>
-                <label for="lanc-mesFaturaInicial-mes">Mês da parcela atual</label>
-                <div class="campo-mes-ano">
-                  <select id="lanc-mesFaturaInicial-mes" required></select>
-                  <select id="lanc-mesFaturaInicial-ano" required></select>
-                </div>
+                <label for="lanc-data">Data da compra</label>
+                <input type="date" id="lanc-data" name="data" required>
               </div>
             </div>
 
@@ -140,8 +137,11 @@
                 <input type="number" id="lanc-parcelaReferencia" name="parcelaReferencia" min="1" step="1" value="1" required>
               </div>
               <div>
-                <label for="lanc-data">Data da compra</label>
-                <input type="date" id="lanc-data" name="data" required>
+                <label for="lanc-mesFaturaInicial-mes">Mês da parcela atual</label>
+                <div class="campo-mes-ano">
+                  <select id="lanc-mesFaturaInicial-mes" required></select>
+                  <select id="lanc-mesFaturaInicial-ano" required></select>
+                </div>
               </div>
             </div>
             <p class="campo-ajuda">Se a compra já vem sendo paga há alguns meses, informe o mês e o número da parcela referentes a agora — as anteriores entram como já pagas automaticamente.</p>
