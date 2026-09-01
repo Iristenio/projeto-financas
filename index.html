@@ -23,6 +23,7 @@
   <nav id="menu-lateral" class="menu-lateral" hidden>
     <button type="button" class="menu-item" data-tela="contas-lancadas">Contas Lançadas</button>
     <button type="button" class="menu-item" data-tela="pagar-parcela">Pagar Parcelas</button>
+    <button type="button" class="menu-item" data-tela="monitoramento">Monitoramento</button>
     <button type="button" class="menu-item" data-tela="recorrentes">Recorrentes</button>
     <button type="button" class="menu-item" data-tela="cadastros">Cadastros</button>
   </nav>
@@ -356,6 +357,73 @@
           <button type="button" id="btn-confirmar-pagamento" class="btn-primario">Marcar selecionadas como pagas</button>
           <p id="pagar-erro" class="mensagem-erro" hidden></p>
           <p id="pagar-sucesso" class="mensagem-sucesso" hidden></p>
+        </div>
+      </section>
+
+      <section id="tela-monitoramento" hidden>
+        <button type="button" id="btn-voltar-monitoramento" class="btn-secundario">← Voltar</button>
+        <h2 class="titulo-secao">Monitoramento</h2>
+
+        <label for="monitor-titulo">Título</label>
+        <input type="text" id="monitor-titulo" placeholder="Buscar por descrição">
+
+        <div class="campo-grupo">
+          <div>
+            <label for="monitor-mes">Mês</label>
+            <div class="campo-mes-ano">
+              <select id="monitor-mes"></select>
+              <select id="monitor-ano"></select>
+            </div>
+          </div>
+          <div>
+            <label for="monitor-status">Status</label>
+            <select id="monitor-status">
+              <option value="Aberto">Em aberto</option>
+              <option value="Pago">Pagas</option>
+              <option value="Todos">Todas</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="campo-grupo">
+          <div>
+            <label for="monitor-categoria">Categoria</label>
+            <select id="monitor-categoria"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label for="monitor-meioPagamento">Meio de pagamento</label>
+            <select id="monitor-meioPagamento"><option value="">Todos</option></select>
+          </div>
+        </div>
+
+        <label for="monitor-pessoa">Pessoa</label>
+        <select id="monitor-pessoa"><option value="">Todas</option></select>
+
+        <button type="button" id="btn-buscar-monitoramento" class="btn-primario">Buscar</button>
+        <p id="monitor-erro" class="mensagem-erro" hidden></p>
+        <p id="monitor-carregando" class="estado-vazio" hidden>Carregando...</p>
+
+        <div id="monitor-resultado" hidden>
+          <p id="monitor-total" class="monitor-total"></p>
+
+          <h3 class="subtitulo">Resumo por pessoa</h3>
+          <ul id="monitor-resumo-pessoa" class="lista-monitor-resumo"></ul>
+          <p id="monitor-resumo-pessoa-vazio" class="estado-vazio" hidden>Nenhum valor com esse filtro.</p>
+
+          <details class="detalhe-secao">
+            <summary>Resumo por categoria</summary>
+            <ul id="monitor-resumo-categoria" class="lista-monitor-resumo"></ul>
+          </details>
+
+          <details class="detalhe-secao">
+            <summary>Resumo por meio de pagamento</summary>
+            <ul id="monitor-resumo-meioPagamento" class="lista-monitor-resumo"></ul>
+          </details>
+
+          <details class="detalhe-secao">
+            <summary>Detalhamento (parcela a parcela)</summary>
+            <ul id="monitor-detalhamento" class="lista-monitor-detalhe"></ul>
+          </details>
         </div>
       </section>
 

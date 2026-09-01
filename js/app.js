@@ -129,6 +129,26 @@ document.addEventListener('DOMContentLoaded', () => {
     pessoa: document.getElementById('cadastro-pessoa'),
   };
 
+  const telaMonitoramento = document.getElementById('tela-monitoramento');
+  const btnVoltarMonitoramento = document.getElementById('btn-voltar-monitoramento');
+  const monitorTitulo = document.getElementById('monitor-titulo');
+  const monitorMes = document.getElementById('monitor-mes');
+  const monitorAno = document.getElementById('monitor-ano');
+  const monitorStatus = document.getElementById('monitor-status');
+  const monitorCategoria = document.getElementById('monitor-categoria');
+  const monitorMeioPagamento = document.getElementById('monitor-meioPagamento');
+  const monitorPessoa = document.getElementById('monitor-pessoa');
+  const btnBuscarMonitoramento = document.getElementById('btn-buscar-monitoramento');
+  const monitorErro = document.getElementById('monitor-erro');
+  const monitorCarregando = document.getElementById('monitor-carregando');
+  const monitorResultado = document.getElementById('monitor-resultado');
+  const monitorTotal = document.getElementById('monitor-total');
+  const monitorResumoPessoa = document.getElementById('monitor-resumo-pessoa');
+  const monitorResumoPessoaVazio = document.getElementById('monitor-resumo-pessoa-vazio');
+  const monitorResumoCategoria = document.getElementById('monitor-resumo-categoria');
+  const monitorResumoMeioPagamento = document.getElementById('monitor-resumo-meioPagamento');
+  const monitorDetalhamento = document.getElementById('monitor-detalhamento');
+
   const telaRecorrentes = document.getElementById('tela-recorrentes');
   const btnVoltarRecorrentes = document.getElementById('btn-voltar-recorrentes');
   const listaRecorrentes = document.getElementById('lista-recorrentes');
@@ -872,6 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     telaContasLancadas.hidden = true;
     telaPagarParcela.hidden = true;
+    telaMonitoramento.hidden = true;
     telaRecorrentes.hidden = true;
     telaCadastros.hidden = true;
     tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
@@ -923,6 +944,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fecharMenu();
       if (item.dataset.tela === 'contas-lancadas') abrirTelaContasLancadas();
       else if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
+      else if (item.dataset.tela === 'monitoramento') abrirTelaMonitoramento();
       else if (item.dataset.tela === 'recorrentes') abrirTelaRecorrentes();
       else if (item.dataset.tela === 'cadastros') abrirTelaCadastros();
     });
@@ -1026,6 +1048,118 @@ document.addEventListener('DOMContentLoaded', () => {
     telaPagarParcela.hidden = true;
     voltarParaAbaLancar();
   });
+
+  async function abrirTelaMonitoramento() {
+    esconderAbasEMostrar(telaMonitoramento, true);
+
+    monitorErro.hidden = true;
+    monitorResultado.hidden = true;
+
+    if (!listasLancamentoCarregadas) {
+      listasLancamentoCarregadas = true;
+      try {
+        await carregarListasLancamento();
+      } catch (erro) {
+        monitorErro.textContent = 'Não foi possível carregar categorias/meios de pagamento/pessoas: ' + erro.message;
+        monitorErro.hidden = false;
+      }
+    }
+
+    monitorTitulo.value = '';
+    popularSeletorMes(monitorMes, true);
+    popularSeletorAno(monitorAno);
+    // Mês fica em "Todos" por padrão — é uma tela de consulta geral
+    // ("quanto Fulano deve", "quanto devo no cartão X"), não de
+    // "o que vence agora" (diferente de Pagar Parcelas).
+    monitorMes.value = '';
+    monitorStatus.value = 'Aberto';
+    popularSelectComOpcaoTodos(monitorCategoria, categoriasCache, 'Todas');
+    popularSelectComOpcaoTodos(monitorMeioPagamento, meiosPagamentoCache, 'Todos');
+    popularSelectComOpcaoTodos(monitorPessoa, pessoasParaRateio, 'Todas');
+
+    buscarMonitoramento();
+  }
+
+  btnVoltarMonitoramento.addEventListener('click', () => {
+    telaMonitoramento.hidden = true;
+    voltarParaAbaLancar();
+  });
+
+  btnBuscarMonitoramento.addEventListener('click', buscarMonitoramento);
+
+  async function buscarMonitoramento() {
+    monitorCarregando.hidden = false;
+    monitorErro.hidden = true;
+    monitorResultado.hidden = true;
+
+    try {
+      const resultado = await apiGet('monitoramento', {
+        titulo: monitorTitulo.value,
+        mes: obterMesAnoValor(monitorMes, monitorAno),
+        categoriaId: monitorCategoria.value,
+        meioPagamentoId: monitorMeioPagamento.value,
+        pessoaId: monitorPessoa.value,
+        status: monitorStatus.value,
+      });
+      renderMonitoramento(resultado);
+      monitorResultado.hidden = false;
+    } catch (erro) {
+      monitorErro.textContent = 'Não foi possível buscar: ' + erro.message;
+      monitorErro.hidden = false;
+    } finally {
+      monitorCarregando.hidden = true;
+    }
+  }
+
+  function renderMonitoramento(resultado) {
+    monitorTotal.textContent = 'Total filtrado: ' + formatarValor(resultado.totalFiltrado);
+
+    monitorResumoPessoa.innerHTML = '';
+    monitorResumoPessoaVazio.hidden = resultado.resumoPorPessoa.length > 0;
+    resultado.resumoPorPessoa.forEach((item) => {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span>' + (mapaPessoas[item.pessoaId] || 'Pessoa #' + item.pessoaId) + '</span>' +
+        '<span>' + formatarValor(item.total) + '</span>';
+      monitorResumoPessoa.appendChild(li);
+    });
+
+    monitorResumoCategoria.innerHTML = '';
+    resultado.resumoPorCategoria.forEach((item) => {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span>' + (mapaCategorias[item.categoriaId] || 'Categoria #' + item.categoriaId) + '</span>' +
+        '<span>' + formatarValor(item.total) + '</span>';
+      monitorResumoCategoria.appendChild(li);
+    });
+
+    monitorResumoMeioPagamento.innerHTML = '';
+    resultado.resumoPorMeioPagamento.forEach((item) => {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span>' + (mapaMeiosPagamento[item.meioPagamentoId] || 'Meio #' + item.meioPagamentoId) + '</span>' +
+        '<span>' + formatarValor(item.total) + '</span>';
+      monitorResumoMeioPagamento.appendChild(li);
+    });
+
+    monitorDetalhamento.innerHTML = '';
+    resultado.detalhamento.forEach((parcela) => {
+      const li = document.createElement('li');
+      const devedoresTexto = parcela.devedores
+        .map((d) => (mapaPessoas[d.pessoaId] || 'Pessoa #' + d.pessoaId) + ': ' + formatarValor(d.valor))
+        .join(' · ');
+      li.innerHTML =
+        '<div class="monitor-detalhe-linha1">' +
+        '<strong>' + parcela.descricao + '</strong>' +
+        '<span>' + formatarValor(parcela.valor) + '</span>' +
+        '</div>' +
+        '<div class="monitor-detalhe-linha2">' +
+        'Nº' + parcela.numeroParcela + ' · ' + formatarMesAno(parcela.mesVencimento) + ' · ' + parcela.status +
+        '</div>' +
+        (devedoresTexto ? '<div class="monitor-detalhe-linha2">' + devedoresTexto + '</div>' : '');
+      monitorDetalhamento.appendChild(li);
+    });
+  }
 
   async function abrirTelaRecorrentes() {
     esconderAbasEMostrar(telaRecorrentes);
