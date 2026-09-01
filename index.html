@@ -159,6 +159,30 @@
               </form>
             </details>
 
+            <details class="detalhe-secao">
+              <summary>Antecipar parcelas</summary>
+              <form id="form-antecipar-parcela">
+                <label>Parcelas em aberto a antecipar</label>
+                <div id="antecipar-parcelas-lista" class="lista-checkbox-parcelas"></div>
+
+                <label for="antecipar-dataPagamento">Data do pagamento</label>
+                <input type="date" id="antecipar-dataPagamento" required>
+
+                <label>O que fazer com as parcelas restantes (não selecionadas)?</label>
+                <div class="opcoes-modo-valor">
+                  <label class="campo-checkbox"><input type="radio" name="anteciparModoRestante" value="manter" checked> Manter as datas originais</label>
+                  <label class="campo-checkbox"><input type="radio" name="anteciparModoRestante" value="comprimir"> Comprimir (adianta sem deixar buraco)</label>
+                </div>
+
+                <label for="antecipar-observacao">Observação (opcional)</label>
+                <input type="text" id="antecipar-observacao" placeholder="Ex: paguei adiantado com o 13º">
+
+                <button type="submit" class="btn-primario">Antecipar selecionadas</button>
+                <p id="antecipar-parcela-erro" class="mensagem-erro" hidden></p>
+                <p id="antecipar-parcela-sucesso" class="mensagem-sucesso" hidden></p>
+              </form>
+            </details>
+
             <details class="detalhe-secao detalhe-secao-perigo">
               <summary>Excluir lançamento</summary>
               <p class="campo-ajuda">"Só as abertas" preserva o histórico das parcelas já pagas. "Tudo" remove o lançamento por completo.</p>

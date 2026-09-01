@@ -306,6 +306,25 @@ form select {
   padding: 0;
 }
 
+.lista-checkbox-parcelas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 4px;
+}
+
+.lista-checkbox-parcelas label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.lista-checkbox-parcelas input {
+  width: auto;
+}
+
 .botoes-rateio {
   display: flex;
   gap: 8px;

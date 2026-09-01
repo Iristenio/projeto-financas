@@ -85,6 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const ajustarParcelaErro = document.getElementById('ajustar-parcela-erro');
   const ajustarParcelaSucesso = document.getElementById('ajustar-parcela-sucesso');
 
+  const formAntecipar = document.getElementById('form-antecipar-parcela');
+  const anteciparParcelasLista = document.getElementById('antecipar-parcelas-lista');
+  const anteciparDataPagamento = document.getElementById('antecipar-dataPagamento');
+  const anteciparObservacao = document.getElementById('antecipar-observacao');
+  const anteciparParcelaErro = document.getElementById('antecipar-parcela-erro');
+  const anteciparParcelaSucesso = document.getElementById('antecipar-parcela-sucesso');
+
   const btnExcluirAbertas = document.getElementById('btn-excluir-abertas');
   const btnExcluirTudo = document.getElementById('btn-excluir-tudo');
   const excluirLancamentoErro = document.getElementById('excluir-lancamento-erro');
@@ -416,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       detalheParcelas.innerHTML = '';
       ajustarNumeroParcela.innerHTML = '';
+      anteciparParcelasLista.innerHTML = '';
       detalhe.parcelas.forEach((p) => {
         const li = document.createElement('li');
         const info = document.createElement('span');
@@ -431,6 +439,15 @@ document.addEventListener('DOMContentLoaded', () => {
           option.value = p['Nº Parcela'];
           option.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
           ajustarNumeroParcela.appendChild(option);
+
+          const labelCheck = document.createElement('label');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = p.ID;
+          const texto = document.createElement('span');
+          texto.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
+          labelCheck.append(checkbox, texto);
+          anteciparParcelasLista.appendChild(labelCheck);
         }
       });
 
@@ -441,11 +458,15 @@ document.addEventListener('DOMContentLoaded', () => {
       detalhe.rateio.forEach((r) => gerenciadorRateioEditar.criarLinha(r.pessoaId, r.valorTotal / detalhe.qtdParcelas));
       gerenciadorRateioEditar.atualizarResumo();
 
+      preencherDataHoje(anteciparDataPagamento);
+
       if (!manterMensagens) {
         editarLancamentoErro.hidden = true;
         editarLancamentoSucesso.hidden = true;
         ajustarParcelaErro.hidden = true;
         ajustarParcelaSucesso.hidden = true;
+        anteciparParcelaErro.hidden = true;
+        anteciparParcelaSucesso.hidden = true;
         excluirLancamentoErro.hidden = true;
       }
     } catch (erro) {
@@ -511,6 +532,37 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (erro) {
       ajustarParcelaErro.textContent = erro.message;
       ajustarParcelaErro.hidden = false;
+    }
+  });
+
+  formAntecipar.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    anteciparParcelaErro.hidden = true;
+    anteciparParcelaSucesso.hidden = true;
+
+    const parcelaIds = Array.from(anteciparParcelasLista.querySelectorAll('input[type="checkbox"]:checked')).map((c) => Number(c.value));
+    if (parcelaIds.length === 0) {
+      anteciparParcelaErro.textContent = 'Selecione ao menos uma parcela para antecipar.';
+      anteciparParcelaErro.hidden = false;
+      return;
+    }
+
+    try {
+      await apiPost('parcelas', 'antecipar', {
+        lancamentoId: lancamentoDetalheId,
+        parcelaIds: parcelaIds,
+        modoRestante: document.querySelector('input[name="anteciparModoRestante"]:checked').value,
+        dataPagamento: anteciparDataPagamento.value,
+        observacao: anteciparObservacao.value,
+      });
+      anteciparParcelaSucesso.textContent = 'Parcela(s) antecipada(s).';
+      anteciparParcelaSucesso.hidden = false;
+      anteciparObservacao.value = '';
+      listaLancamentosCarregada = false;
+      await abrirDetalheLancamento(lancamentoDetalheId, true);
+    } catch (erro) {
+      anteciparParcelaErro.textContent = erro.message;
+      anteciparParcelaErro.hidden = false;
     }
   });
 
