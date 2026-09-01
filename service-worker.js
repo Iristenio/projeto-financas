@@ -1,4 +1,4 @@
-const CACHE_NAME = 'financas-cache-v1';
+const CACHE_NAME = 'financas-cache-v2';
 const ARQUIVOS_APP_SHELL = [
   './',
   './index.html',
