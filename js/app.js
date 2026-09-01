@@ -53,6 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const telaContasLancadas = document.getElementById('tela-contas-lancadas');
   const btnVoltarContasLancadas = document.getElementById('btn-voltar-contas-lancadas');
+  const contasFiltroTitulo = document.getElementById('contas-filtro-titulo');
+  const contasFiltroMes = document.getElementById('contas-filtro-mes');
+  const contasFiltroAno = document.getElementById('contas-filtro-ano');
+  const contasFiltroCategoria = document.getElementById('contas-filtro-categoria');
+  const contasFiltroMeioPagamento = document.getElementById('contas-filtro-meioPagamento');
+  const contasFiltroPessoa = document.getElementById('contas-filtro-pessoa');
+  const btnFiltrarContas = document.getElementById('btn-filtrar-contas');
   const contasLancadasLista = document.getElementById('subtab-lista');
   const contasLancadasDetalhe = document.getElementById('subtab-detalhe');
   const listaLancamentos = document.getElementById('lista-lancamentos');
@@ -219,7 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function formatarData(dataIso) {
+    // Parcelas marcadas como pagas retroativamente na criação do
+    // lançamento (histórico, antes da "parcela atual") não têm uma
+    // Data Pagamento real registrada — cai aqui como '' e não pode
+    // virar NaN/NaN/NaN na tela.
+    if (!dataIso) return '(data não registrada)';
     const d = new Date(dataIso);
+    if (isNaN(d.getTime())) return '(data não registrada)';
     return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear();
   }
 
@@ -409,7 +422,13 @@ document.addEventListener('DOMContentLoaded', () => {
     listaLancamentos.innerHTML = '';
 
     try {
-      const lancamentos = await apiGet('lancamentos');
+      const lancamentos = await apiGet('lancamentos', {
+        titulo: contasFiltroTitulo.value,
+        mes: obterMesAnoValor(contasFiltroMes, contasFiltroAno),
+        categoriaId: contasFiltroCategoria.value,
+        meioPagamentoId: contasFiltroMeioPagamento.value,
+        pessoaId: contasFiltroPessoa.value,
+      });
       lancamentos.sort((a, b) => new Date(b.data) - new Date(a.data) || b.id - a.id);
 
       lancamentos.forEach((lanc) => {
@@ -426,8 +445,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const linha2 = document.createElement('div');
         linha2.className = 'lancamento-linha2';
+        const pessoasTexto = lanc.pessoasRateio.map((id) => mapaPessoas[id] || '?').join(', ');
         const categoriaMeio = document.createElement('span');
-        categoriaMeio.textContent = (mapaCategorias[lanc.categoriaId] || '?') + ' · ' + (mapaMeiosPagamento[lanc.meioPagamentoId] || '?');
+        categoriaMeio.textContent = (mapaCategorias[lanc.categoriaId] || '?') + ' · ' + (mapaMeiosPagamento[lanc.meioPagamentoId] || '?') + ' · ' + pessoasTexto;
         linha2.appendChild(categoriaMeio);
         if (lanc.recorrente) {
           const badge = document.createElement('span');
@@ -951,8 +971,22 @@ document.addEventListener('DOMContentLoaded', () => {
         lancamentosVazio.hidden = false;
       }
     }
+
+    contasFiltroTitulo.value = '';
+    popularSeletorMes(contasFiltroMes, true);
+    popularSeletorAno(contasFiltroAno);
+    // Mês fica em "Todos" por padrão aqui — essa tela é de consulta
+    // geral, não de "o que preciso fazer agora" (diferente de Pagar
+    // Parcelas, que já abre no mês atual).
+    contasFiltroMes.value = '';
+    popularSelectComOpcaoTodos(contasFiltroCategoria, categoriasCache, 'Todas');
+    popularSelectComOpcaoTodos(contasFiltroMeioPagamento, meiosPagamentoCache, 'Todos');
+    popularSelectComOpcaoTodos(contasFiltroPessoa, pessoasParaRateio, 'Todas');
+
     renderListaLancamentos();
   }
+
+  btnFiltrarContas.addEventListener('click', renderListaLancamentos);
 
   btnVoltarContasLancadas.addEventListener('click', () => {
     telaContasLancadas.hidden = true;

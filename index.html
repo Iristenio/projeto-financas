@@ -181,8 +181,39 @@
           <div id="subtab-lista">
             <button type="button" id="btn-voltar-contas-lancadas" class="btn-secundario">← Voltar</button>
             <h2 class="titulo-secao">Contas Lançadas</h2>
+
+            <label for="contas-filtro-titulo">Título</label>
+            <input type="text" id="contas-filtro-titulo" placeholder="Buscar por descrição">
+
+            <div class="campo-grupo">
+              <div>
+                <label for="contas-filtro-mes">Mês</label>
+                <div class="campo-mes-ano">
+                  <select id="contas-filtro-mes"></select>
+                  <select id="contas-filtro-ano"></select>
+                </div>
+              </div>
+              <div>
+                <label for="contas-filtro-categoria">Categoria</label>
+                <select id="contas-filtro-categoria"><option value="">Todas</option></select>
+              </div>
+            </div>
+
+            <div class="campo-grupo">
+              <div>
+                <label for="contas-filtro-meioPagamento">Meio de pagamento</label>
+                <select id="contas-filtro-meioPagamento"><option value="">Todos</option></select>
+              </div>
+              <div>
+                <label for="contas-filtro-pessoa">Pessoa</label>
+                <select id="contas-filtro-pessoa"><option value="">Todas</option></select>
+              </div>
+            </div>
+
+            <button type="button" id="btn-filtrar-contas" class="btn-primario">Buscar</button>
+
             <ul id="lista-lancamentos" class="lista-lancamentos"></ul>
-            <p id="lancamentos-vazio" class="estado-vazio" hidden>Nenhum lançamento ainda.</p>
+            <p id="lancamentos-vazio" class="estado-vazio" hidden>Nenhum lançamento com esse filtro.</p>
             <p id="lancamentos-carregando" class="estado-vazio">Carregando...</p>
           </div>
 
