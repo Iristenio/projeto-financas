@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Finanças</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#4a86e8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Finanças">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Finanças</h1>
+    <button type="button" id="btn-sair" class="btn-sair" hidden>Sair</button>
+  </header>
+
+  <main class="container">
+
+    <!-- TELA DE LOGIN -->
+    <section id="tela-login" class="cartao">
+      <p class="login-intro">Cole o token de acesso que você recebeu.</p>
+      <form id="form-login">
+        <label for="token">Token</label>
+        <input type="text" id="token" name="token" autocomplete="off" spellcheck="false" required>
+        <button type="submit" class="btn-primario">Entrar</button>
+        <p id="login-erro" class="mensagem-erro" hidden></p>
+      </form>
+    </section>
+
+    <!-- APP (pós-login) -->
+    <section id="tela-app" hidden>
+      <p id="saudacao" class="saudacao"></p>
+
+      <!-- Colaborador ainda não tem tela disponível nesta versão -->
+      <div id="bloqueio-colaborador" class="cartao" hidden>
+        <p>Ainda não há telas disponíveis para o seu perfil (Colaborador) nesta versão do app.</p>
+      </div>
+
+      <div id="area-admin" hidden>
+        <nav class="tabs" role="tablist">
+          <button type="button" class="tab-button" data-tab="lancar" role="tab" aria-selected="true">Lançar</button>
+          <button type="button" class="tab-button" data-tab="historico" role="tab" aria-selected="false">Histórico</button>
+        </nav>
+
+        <section id="tab-lancar" class="tab-panel" role="tabpanel">
+          <form id="form-gasto">
+            <label for="valor">Valor</label>
+            <input type="number" id="valor" name="valor" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+
+            <label for="categoria">Categoria</label>
+            <select id="categoria" name="categoriaId" required></select>
+
+            <label for="meioPagamento">Meio de pagamento</label>
+            <select id="meioPagamento" name="meioPagamentoId" required></select>
+
+            <label for="pessoa">Quem gastou</label>
+            <select id="pessoa" name="pessoaId" required></select>
+
+            <label for="descricao">Descrição (opcional)</label>
+            <input type="text" id="descricao" name="descricao" placeholder="Ex: mercado do mês">
+
+            <label for="data">Data</label>
+            <input type="date" id="data" name="data" required>
+
+            <button type="submit" class="btn-primario btn-salvar">Salvar</button>
+            <p id="gasto-erro" class="mensagem-erro" hidden></p>
+          </form>
+        </section>
+
+        <section id="tab-historico" class="tab-panel" hidden role="tabpanel">
+          <label for="filtro-mes" class="filtro-mes-label">Mês</label>
+          <input type="month" id="filtro-mes" class="filtro-mes">
+
+          <ul id="lista-historico" class="lista-historico"></ul>
+          <p id="historico-vazio" class="estado-vazio" hidden>Nenhum gasto neste mês.</p>
+          <p id="historico-carregando" class="estado-vazio">Carregando...</p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>
