@@ -113,6 +113,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const pagarErro = document.getElementById('pagar-erro');
   const pagarSucesso = document.getElementById('pagar-sucesso');
 
+  const telaCadastros = document.getElementById('tela-cadastros');
+  const btnVoltarCadastros = document.getElementById('btn-voltar-cadastros');
+  const cadastroTabButtons = document.querySelectorAll('.cadastro-tab-button');
+  const cadastroTabPanels = {
+    categoria: document.getElementById('cadastro-categoria'),
+    meioPagamento: document.getElementById('cadastro-meioPagamento'),
+    pessoa: document.getElementById('cadastro-pessoa'),
+  };
+
   const telaRecorrentes = document.getElementById('tela-recorrentes');
   const btnVoltarRecorrentes = document.getElementById('btn-voltar-recorrentes');
   const listaRecorrentes = document.getElementById('lista-recorrentes');
@@ -843,6 +852,17 @@ document.addEventListener('DOMContentLoaded', () => {
       fecharMenu();
       if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
       else if (item.dataset.tela === 'recorrentes') abrirTelaRecorrentes();
+      else if (item.dataset.tela === 'cadastros') abrirTelaCadastros();
+    });
+  });
+
+  cadastroTabButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const alvo = button.dataset.cadastro;
+      cadastroTabButtons.forEach((b) => b.setAttribute('aria-selected', b === button ? 'true' : 'false'));
+      Object.entries(cadastroTabPanels).forEach(([nome, painel]) => {
+        painel.hidden = nome !== alvo;
+      });
     });
   });
 
@@ -992,6 +1012,218 @@ document.addEventListener('DOMContentLoaded', () => {
       recorrentesCarregando.hidden = true;
     }
   }
+
+  async function abrirTelaCadastros() {
+    esconderAbasEMostrar(telaCadastros);
+    gerenciadorCategoria.carregarLista();
+    gerenciadorMeioPagamento.carregarLista();
+    gerenciadorPessoa.carregarLista();
+  }
+
+  btnVoltarCadastros.addEventListener('click', () => {
+    telaCadastros.hidden = true;
+    voltarParaAbaLancar();
+  });
+
+  /**
+   * CRUD genérico de um cadastro (Categoria/Meio de Pagamento/
+   * Pessoa) — lista + formulário de criar/editar reaproveitado
+   * (igual à edição de gasto rotineiro: o mesmo form muda de modo).
+   */
+  function criarGerenciadorCadastro(config) {
+    let idEmEdicaoCadastro = null;
+
+    function cancelarEdicao() {
+      idEmEdicaoCadastro = null;
+      config.form.reset();
+      config.campoAtivoLinha.hidden = true;
+      config.btnSalvar.textContent = config.textoCriar;
+      config.btnCancelar.hidden = true;
+      if (config.aoCancelar) config.aoCancelar();
+    }
+
+    function editar(item) {
+      idEmEdicaoCadastro = item.id;
+      config.preencherForm(item);
+      config.campoAtivo.checked = item.ativo;
+      config.campoAtivoLinha.hidden = false;
+      config.btnSalvar.textContent = 'Salvar alterações';
+      config.btnCancelar.hidden = false;
+      config.erroEl.hidden = true;
+    }
+
+    async function excluir(item) {
+      if (!confirm('Excluir "' + item.nome + '"?')) return;
+      try {
+        await apiPost(config.recursoPost, 'excluir', { id: item.id });
+        carregarLista();
+      } catch (erro) {
+        alert(erro.message);
+      }
+    }
+
+    async function carregarLista() {
+      config.listaEl.innerHTML = '<li>Carregando...</li>';
+      try {
+        const itens = await apiGet(config.recursoGet);
+        config.listaEl.innerHTML = '';
+
+        itens.forEach((item) => {
+          const li = document.createElement('li');
+
+          const linha1 = document.createElement('div');
+          linha1.className = 'cadastro-linha1';
+          const nome = document.createElement('strong');
+          nome.textContent = item.nome;
+          linha1.appendChild(nome);
+          if (!item.ativo) {
+            const badge = document.createElement('span');
+            badge.className = 'badge-inativo';
+            badge.textContent = 'Inativa';
+            linha1.appendChild(badge);
+          }
+
+          const linha2 = document.createElement('div');
+          linha2.className = 'cadastro-linha2';
+          linha2.textContent = config.linha2(item) + ' · usado ' + item.qtdUsos + 'x';
+
+          const acoes = document.createElement('div');
+          acoes.className = 'cadastro-acoes';
+          const btnEditar = document.createElement('button');
+          btnEditar.type = 'button';
+          btnEditar.textContent = 'Editar';
+          btnEditar.addEventListener('click', () => editar(item));
+          const btnExcluir = document.createElement('button');
+          btnExcluir.type = 'button';
+          btnExcluir.textContent = 'Excluir';
+          btnExcluir.addEventListener('click', () => excluir(item));
+          acoes.append(btnEditar, btnExcluir);
+
+          li.append(linha1, linha2, acoes);
+          config.listaEl.appendChild(li);
+        });
+      } catch (erro) {
+        config.listaEl.innerHTML = '';
+        const li = document.createElement('li');
+        li.textContent = 'Não foi possível carregar: ' + erro.message;
+        config.listaEl.appendChild(li);
+      }
+    }
+
+    config.btnCancelar.addEventListener('click', cancelarEdicao);
+
+    config.form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      config.erroEl.hidden = true;
+
+      const dados = config.montarDados();
+      if (idEmEdicaoCadastro !== null) {
+        dados.id = idEmEdicaoCadastro;
+        dados.ativo = config.campoAtivo.checked;
+      }
+
+      try {
+        const resultado = await apiPost(config.recursoPost, 'salvar', { dados: dados });
+        cancelarEdicao();
+        if (config.aoSalvarComSucesso) config.aoSalvarComSucesso(resultado);
+        carregarLista();
+      } catch (erro) {
+        config.erroEl.textContent = erro.message;
+        config.erroEl.hidden = false;
+      }
+    });
+
+    return { carregarLista: carregarLista };
+  }
+
+  const gerenciadorCategoria = criarGerenciadorCadastro({
+    form: document.getElementById('form-categoria'),
+    listaEl: document.getElementById('lista-categorias'),
+    btnSalvar: document.getElementById('categoria-btn-salvar'),
+    btnCancelar: document.getElementById('categoria-btn-cancelar'),
+    campoAtivo: document.getElementById('categoria-ativo'),
+    campoAtivoLinha: document.getElementById('categoria-ativo-linha'),
+    erroEl: document.getElementById('categoria-erro'),
+    recursoGet: 'categorias-cadastro',
+    recursoPost: 'categorias',
+    textoCriar: 'Cadastrar categoria',
+    linha2: () => 'Categoria',
+    montarDados: () => ({ nome: document.getElementById('categoria-nome').value }),
+    preencherForm: (item) => {
+      document.getElementById('categoria-nome').value = item.nome;
+    },
+  });
+
+  const gerenciadorMeioPagamento = criarGerenciadorCadastro({
+    form: document.getElementById('form-meioPagamento'),
+    listaEl: document.getElementById('lista-meioPagamento'),
+    btnSalvar: document.getElementById('meioPagamento-btn-salvar'),
+    btnCancelar: document.getElementById('meioPagamento-btn-cancelar'),
+    campoAtivo: document.getElementById('meioPagamento-ativo'),
+    campoAtivoLinha: document.getElementById('meioPagamento-ativo-linha'),
+    erroEl: document.getElementById('meioPagamento-erro'),
+    recursoGet: 'meios-pagamento-cadastro',
+    recursoPost: 'meios-pagamento',
+    textoCriar: 'Cadastrar meio de pagamento',
+    linha2: (item) => item.tipo,
+    montarDados: () => ({
+      nome: document.getElementById('meioPagamento-nome').value,
+      tipo: document.getElementById('meioPagamento-tipo').value,
+      diaFechamento: document.getElementById('meioPagamento-diaFechamento').value,
+      diaVencimento: document.getElementById('meioPagamento-diaVencimento').value,
+    }),
+    preencherForm: (item) => {
+      document.getElementById('meioPagamento-nome').value = item.nome;
+      document.getElementById('meioPagamento-tipo').value = item.tipo;
+      document.getElementById('meioPagamento-diaFechamento').value = item.diaFechamento || '';
+      document.getElementById('meioPagamento-diaVencimento').value = item.diaVencimento || '';
+    },
+  });
+
+  const pessoaTipo = document.getElementById('pessoa-tipo');
+  const pessoaPapelLinha = document.getElementById('pessoa-papel-linha');
+
+  function atualizarVisibilidadePapel() {
+    pessoaPapelLinha.hidden = pessoaTipo.value !== 'Membro do Domicílio';
+  }
+  pessoaTipo.addEventListener('change', atualizarVisibilidadePapel);
+
+  const gerenciadorPessoa = criarGerenciadorCadastro({
+    form: document.getElementById('form-pessoa'),
+    listaEl: document.getElementById('lista-pessoa'),
+    btnSalvar: document.getElementById('pessoa-btn-salvar'),
+    btnCancelar: document.getElementById('pessoa-btn-cancelar'),
+    campoAtivo: document.getElementById('pessoa-ativo'),
+    campoAtivoLinha: document.getElementById('pessoa-ativo-linha'),
+    erroEl: document.getElementById('pessoa-erro'),
+    recursoGet: 'pessoas-cadastro',
+    recursoPost: 'pessoas',
+    textoCriar: 'Cadastrar pessoa',
+    linha2: (item) => item.tipo + (item.papel ? ' · ' + item.papel : ''),
+    montarDados: () => ({
+      nome: document.getElementById('pessoa-nome').value,
+      tipo: pessoaTipo.value,
+      papel: document.getElementById('pessoa-papel').value,
+    }),
+    preencherForm: (item) => {
+      document.getElementById('pessoa-nome').value = item.nome;
+      pessoaTipo.value = item.tipo;
+      if (item.papel) document.getElementById('pessoa-papel').value = item.papel;
+      atualizarVisibilidadePapel();
+    },
+    aoCancelar: () => {
+      pessoaTipo.value = 'Membro do Domicílio';
+      atualizarVisibilidadePapel();
+      document.getElementById('pessoa-token-aviso').hidden = true;
+    },
+    aoSalvarComSucesso: (resultado) => {
+      const aviso = document.getElementById('pessoa-token-aviso');
+      if (resultado.token) {
+        aviso.textContent = 'Pessoa criada! Token de acesso (anote agora, não será mostrado de novo): ' + resultado.token;
+        aviso.hidden = false;
+      }
+    },
+  });
 
   function atualizarTotalSelecionado() {
     const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));

@@ -23,6 +23,7 @@
   <nav id="menu-lateral" class="menu-lateral" hidden>
     <button type="button" class="menu-item" data-tela="pagar-parcela">Parcelas</button>
     <button type="button" class="menu-item" data-tela="recorrentes">Recorrentes</button>
+    <button type="button" class="menu-item" data-tela="cadastros">Cadastros</button>
   </nav>
   <div id="menu-overlay" class="menu-overlay" hidden></div>
 
@@ -331,6 +332,98 @@
         <ul id="lista-recorrentes" class="lista-lancamentos"></ul>
         <p id="recorrentes-vazio" class="estado-vazio" hidden>Nenhuma renovação pendente no momento.</p>
         <p id="recorrentes-carregando" class="estado-vazio">Carregando...</p>
+      </section>
+
+      <section id="tela-cadastros" hidden>
+        <button type="button" id="btn-voltar-cadastros" class="btn-secundario">← Voltar</button>
+        <h2 class="titulo-secao">Cadastros</h2>
+
+        <nav class="subtabs" role="tablist">
+          <button type="button" class="cadastro-tab-button" data-cadastro="categoria" role="tab" aria-selected="true">Categorias</button>
+          <button type="button" class="cadastro-tab-button" data-cadastro="meioPagamento" role="tab" aria-selected="false">Meios de Pagamento</button>
+          <button type="button" class="cadastro-tab-button" data-cadastro="pessoa" role="tab" aria-selected="false">Pessoas</button>
+        </nav>
+
+        <!-- CATEGORIAS -->
+        <div id="cadastro-categoria" class="cadastro-tab-panel">
+          <form id="form-categoria">
+            <input type="hidden" id="categoria-id">
+            <label for="categoria-nome">Nome</label>
+            <input type="text" id="categoria-nome" required>
+            <label class="campo-checkbox" id="categoria-ativo-linha" hidden for="categoria-ativo">
+              <input type="checkbox" id="categoria-ativo" checked>
+              Ativa
+            </label>
+            <button type="submit" class="btn-primario" id="categoria-btn-salvar">Cadastrar categoria</button>
+            <button type="button" id="categoria-btn-cancelar" class="btn-secundario" hidden>Cancelar edição</button>
+            <p id="categoria-erro" class="mensagem-erro" hidden></p>
+          </form>
+          <ul id="lista-categorias" class="lista-cadastro"></ul>
+        </div>
+
+        <!-- MEIOS DE PAGAMENTO -->
+        <div id="cadastro-meioPagamento" class="cadastro-tab-panel" hidden>
+          <form id="form-meioPagamento">
+            <input type="hidden" id="meioPagamento-id">
+            <label for="meioPagamento-nome">Nome</label>
+            <input type="text" id="meioPagamento-nome" required>
+            <label for="meioPagamento-tipo">Tipo</label>
+            <select id="meioPagamento-tipo" required>
+              <option value="Pronto Pagamento">Pronto Pagamento</option>
+              <option value="Cartão de Crédito">Cartão de Crédito</option>
+              <option value="Débito Automático">Débito Automático</option>
+            </select>
+            <div class="campo-grupo">
+              <div>
+                <label for="meioPagamento-diaFechamento">Dia de fechamento (opcional)</label>
+                <input type="number" id="meioPagamento-diaFechamento" min="1" max="31" step="1">
+              </div>
+              <div>
+                <label for="meioPagamento-diaVencimento">Dia de vencimento (opcional)</label>
+                <input type="number" id="meioPagamento-diaVencimento" min="1" max="31" step="1">
+              </div>
+            </div>
+            <label class="campo-checkbox" id="meioPagamento-ativo-linha" hidden for="meioPagamento-ativo">
+              <input type="checkbox" id="meioPagamento-ativo" checked>
+              Ativo
+            </label>
+            <button type="submit" class="btn-primario" id="meioPagamento-btn-salvar">Cadastrar meio de pagamento</button>
+            <button type="button" id="meioPagamento-btn-cancelar" class="btn-secundario" hidden>Cancelar edição</button>
+            <p id="meioPagamento-erro" class="mensagem-erro" hidden></p>
+          </form>
+          <ul id="lista-meioPagamento" class="lista-cadastro"></ul>
+        </div>
+
+        <!-- PESSOAS -->
+        <div id="cadastro-pessoa" class="cadastro-tab-panel" hidden>
+          <form id="form-pessoa">
+            <input type="hidden" id="pessoa-id">
+            <label for="pessoa-nome">Nome</label>
+            <input type="text" id="pessoa-nome" required>
+            <label for="pessoa-tipo">Tipo</label>
+            <select id="pessoa-tipo" required>
+              <option value="Membro do Domicílio">Membro do Domicílio</option>
+              <option value="Terceiro Monitorado">Terceiro Monitorado</option>
+              <option value="Terceiro Devedor">Terceiro Devedor</option>
+            </select>
+            <div id="pessoa-papel-linha">
+              <label for="pessoa-papel">Papel</label>
+              <select id="pessoa-papel">
+                <option value="Admin">Admin</option>
+                <option value="Colaborador">Colaborador</option>
+              </select>
+            </div>
+            <label class="campo-checkbox" id="pessoa-ativo-linha" hidden for="pessoa-ativo">
+              <input type="checkbox" id="pessoa-ativo" checked>
+              Ativa
+            </label>
+            <button type="submit" class="btn-primario" id="pessoa-btn-salvar">Cadastrar pessoa</button>
+            <button type="button" id="pessoa-btn-cancelar" class="btn-secundario" hidden>Cancelar edição</button>
+            <p id="pessoa-erro" class="mensagem-erro" hidden></p>
+            <p id="pessoa-token-aviso" class="mensagem-sucesso" hidden></p>
+          </form>
+          <ul id="lista-pessoa" class="lista-cadastro"></ul>
+        </div>
       </section>
     </section>
   </main>
