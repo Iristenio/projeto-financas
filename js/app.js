@@ -148,6 +148,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
   }
 
+  // O campo do formulário pede "mês da parcela atual" (mais
+  // intuitivo — o usuário sabe em que mês está e qual o número da
+  // parcela corrente, sem ter que calcular de cabeça quando foi a
+  // parcela 1). A API espera o mês da parcela 1, então subtraímos
+  // aqui antes de enviar.
+  function subtrairMeses(mesAno, qtdMeses) {
+    const [ano, mes] = mesAno.split('-').map(Number);
+    const data = new Date(ano, mes - 1 - qtdMeses, 1);
+    return data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0');
+  }
+
   function preencherDataHoje(input) {
     const hoje = new Date();
     const offset = hoje.getTimezoneOffset();
@@ -676,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
       descricao: document.getElementById('lanc-descricao').value,
       valorTotal: parseFloat(lancValorTotal.value),
       qtdParcelas: Number(lancQtdParcelas.value),
-      mesFaturaInicial: lancMesFaturaInicial.value,
+      mesFaturaInicial: subtrairMeses(lancMesFaturaInicial.value, Number(document.getElementById('lanc-parcelaReferencia').value) - 1),
       parcelaReferencia: Number(document.getElementById('lanc-parcelaReferencia').value),
       data: lancData.value,
       recorrente: document.getElementById('lanc-recorrente').checked,
@@ -918,7 +929,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     popularSelectComOpcaoTodos(pagarMeioPagamento, meiosPagamentoCache, 'Todos');
     popularSelectComOpcaoTodos(pagarCategoria, categoriasCache, 'Todas');
-    pagarMes.value = mesAtual();
+    // Mês fica em branco por padrão (= sem filtro de mês) — igual
+    // meio de pagamento/categoria já ficavam em "Todos"/"Todas".
+    // Antes vinha pré-preenchido com o mês atual, o que fazia a
+    // busca "sem filtro" na prática esconder tudo que não vencesse
+    // neste mês, parecendo que não havia nada cadastrado.
+    pagarMes.value = '';
     preencherDataHoje(pagarDataPagamento);
   }
 
