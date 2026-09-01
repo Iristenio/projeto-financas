@@ -332,6 +332,15 @@ form select {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
+}
+
+.lancamento-card:hover {
+  border-color: var(--color-primary);
 }
 
 .lancamento-linha1 {
@@ -383,6 +392,78 @@ form select {
 .lancamento-proxima {
   font-size: 0.85rem;
   color: var(--color-text-muted);
+}
+
+.subtitulo {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  margin: 20px 0 8px;
+}
+
+.lista-saldo-pessoas, .lista-parcelas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lista-saldo-pessoas li, .lista-parcelas li {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+  gap: 8px;
+}
+
+.parcela-status {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+
+.parcela-status-pago {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.detalhe-secao {
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.detalhe-secao summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.detalhe-secao form {
+  margin-top: 12px;
+}
+
+.detalhe-secao-perigo {
+  border-color: var(--color-danger);
+}
+
+.botoes-excluir {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-perigo {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .filtro-mes-label {

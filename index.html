@@ -94,6 +94,73 @@
             <p id="lancamentos-carregando" class="estado-vazio">Carregando...</p>
           </div>
 
+          <div id="subtab-detalhe" class="subtab-panel" hidden>
+            <button type="button" id="btn-voltar-lista" class="btn-secundario">← Voltar para a lista</button>
+
+            <h2 id="detalhe-titulo" class="titulo-secao"></h2>
+            <p id="detalhe-info" class="lancamento-linha2"></p>
+            <p id="detalhe-erro" class="mensagem-erro" hidden></p>
+
+            <h3 class="subtitulo">Saldo por pessoa</h3>
+            <ul id="detalhe-saldo-pessoas" class="lista-saldo-pessoas"></ul>
+
+            <h3 class="subtitulo">Parcelas</h3>
+            <ul id="detalhe-parcelas" class="lista-parcelas"></ul>
+
+            <details class="detalhe-secao">
+              <summary>Editar categoria, descrição e rateio</summary>
+              <form id="form-editar-lancamento">
+                <label for="editar-categoria">Categoria</label>
+                <select id="editar-categoria" required></select>
+
+                <label for="editar-descricao">Descrição</label>
+                <input type="text" id="editar-descricao" required>
+
+                <fieldset class="rateio-fieldset">
+                  <legend>Rateio entre pessoas</legend>
+                  <div id="editar-rateio-lista"></div>
+                  <button type="button" id="editar-btn-dividir-igual" class="btn-secundario">Dividir igualmente entre selecionados</button>
+                  <p id="editar-rateio-soma" class="rateio-soma"></p>
+                </fieldset>
+
+                <button type="submit" class="btn-primario">Salvar alterações</button>
+                <p id="editar-lancamento-erro" class="mensagem-erro" hidden></p>
+                <p id="editar-lancamento-sucesso" class="mensagem-sucesso" hidden></p>
+              </form>
+            </details>
+
+            <details class="detalhe-secao">
+              <summary>Ajustar valor de uma parcela</summary>
+              <form id="form-ajustar-parcela">
+                <label for="ajustar-numeroParcela">Parcela</label>
+                <select id="ajustar-numeroParcela" required></select>
+
+                <label for="ajustar-novoValor">Novo valor</label>
+                <input type="number" id="ajustar-novoValor" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+
+                <label for="ajustar-modo">Aplicar</label>
+                <select id="ajustar-modo" required>
+                  <option value="apenasEsta">Só nessa parcela (ex: conta que variou 1 mês)</option>
+                  <option value="emDiante">Nessa e nas seguintes (ex: reajuste permanente)</option>
+                </select>
+
+                <button type="submit" class="btn-primario">Aplicar ajuste</button>
+                <p id="ajustar-parcela-erro" class="mensagem-erro" hidden></p>
+                <p id="ajustar-parcela-sucesso" class="mensagem-sucesso" hidden></p>
+              </form>
+            </details>
+
+            <details class="detalhe-secao detalhe-secao-perigo">
+              <summary>Excluir lançamento</summary>
+              <p class="campo-ajuda">"Só as abertas" preserva o histórico das parcelas já pagas. "Tudo" remove o lançamento por completo.</p>
+              <div class="botoes-excluir">
+                <button type="button" id="btn-excluir-abertas" class="btn-secundario btn-perigo">Excluir só parcelas abertas</button>
+                <button type="button" id="btn-excluir-tudo" class="btn-secundario btn-perigo">Excluir tudo</button>
+              </div>
+              <p id="excluir-lancamento-erro" class="mensagem-erro" hidden></p>
+            </details>
+          </div>
+
           <div id="subtab-nova" class="subtab-panel">
           <form id="form-lancamento">
             <div class="campo-grupo">

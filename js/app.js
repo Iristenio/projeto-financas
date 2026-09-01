@@ -50,16 +50,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const subtabPanels = {
     nova: document.getElementById('subtab-nova'),
     lista: document.getElementById('subtab-lista'),
+    detalhe: document.getElementById('subtab-detalhe'),
   };
   const listaLancamentos = document.getElementById('lista-lancamentos');
   const lancamentosVazio = document.getElementById('lancamentos-vazio');
   const lancamentosCarregando = document.getElementById('lancamentos-carregando');
 
+  const btnVoltarLista = document.getElementById('btn-voltar-lista');
+  const detalheTitulo = document.getElementById('detalhe-titulo');
+  const detalheInfo = document.getElementById('detalhe-info');
+  const detalheErro = document.getElementById('detalhe-erro');
+  const detalheSaldoPessoas = document.getElementById('detalhe-saldo-pessoas');
+  const detalheParcelas = document.getElementById('detalhe-parcelas');
+
+  const formEditarLancamento = document.getElementById('form-editar-lancamento');
+  const editarCategoria = document.getElementById('editar-categoria');
+  const editarDescricao = document.getElementById('editar-descricao');
+  const editarRateioLista = document.getElementById('editar-rateio-lista');
+  const editarRateioSoma = document.getElementById('editar-rateio-soma');
+  const editarBtnDividirIgual = document.getElementById('editar-btn-dividir-igual');
+  const editarLancamentoErro = document.getElementById('editar-lancamento-erro');
+  const editarLancamentoSucesso = document.getElementById('editar-lancamento-sucesso');
+
+  const formAjustarParcela = document.getElementById('form-ajustar-parcela');
+  const ajustarNumeroParcela = document.getElementById('ajustar-numeroParcela');
+  const ajustarNovoValor = document.getElementById('ajustar-novoValor');
+  const ajustarModo = document.getElementById('ajustar-modo');
+  const ajustarParcelaErro = document.getElementById('ajustar-parcela-erro');
+  const ajustarParcelaSucesso = document.getElementById('ajustar-parcela-sucesso');
+
+  const btnExcluirAbertas = document.getElementById('btn-excluir-abertas');
+  const btnExcluirTudo = document.getElementById('btn-excluir-tudo');
+  const excluirLancamentoErro = document.getElementById('excluir-lancamento-erro');
+
   let listasLancamentoCarregadas = false;
   let listaLancamentosCarregada = false;
   let pessoasParaRateio = [];
+  let categoriasCache = [];
   let mapaCategorias = {};
   let mapaMeiosPagamento = {};
+  let mapaPessoas = {};
+  let lancamentoDetalheId = null;
+  let detalheValorTotalAtual = 0;
 
   let idEmEdicao = null;
 
@@ -122,10 +154,13 @@ document.addEventListener('DOMContentLoaded', () => {
     pessoasParaRateio = pessoas;
     montarRateioLista();
 
+    categoriasCache = categorias;
     mapaCategorias = {};
     categorias.forEach((c) => (mapaCategorias[c.id] = c.nome));
     mapaMeiosPagamento = {};
     meiosPagamento.forEach((m) => (mapaMeiosPagamento[m.id] = m.nome));
+    mapaPessoas = {};
+    pessoas.forEach((p) => (mapaPessoas[p.id] = p.nome));
   }
 
   function formatarMesAno(dataIso) {
@@ -186,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
           li.appendChild(proxima);
         }
 
+        li.addEventListener('click', () => abrirDetalheLancamento(lanc.id));
         listaLancamentos.appendChild(li);
       });
 
@@ -211,6 +247,246 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  function mostrarSubtab(nome) {
+    Object.entries(subtabPanels).forEach(([n, painel]) => {
+      painel.hidden = n !== nome;
+    });
+    subtabButtons.forEach((b) => b.setAttribute('aria-selected', b.dataset.subtab === nome ? 'true' : 'false'));
+  }
+
+  async function abrirDetalheLancamento(id, manterMensagens) {
+    lancamentoDetalheId = id;
+    mostrarSubtab('detalhe');
+    detalheErro.hidden = true;
+    detalheSaldoPessoas.innerHTML = '';
+    detalheParcelas.innerHTML = '<li>Carregando...</li>';
+
+    try {
+      const detalhe = await apiGet('lancamentos', { id: id });
+      detalheValorTotalAtual = detalhe.valorTotal;
+
+      detalheTitulo.textContent = detalhe.descricao || '(sem descrição)';
+      detalheInfo.textContent =
+        (mapaCategorias[detalhe.categoriaId] || '?') + ' · ' + (mapaMeiosPagamento[detalhe.meioPagamentoId] || '?') + ' · ' + formatarValor(detalhe.valorTotal) + (detalhe.recorrente ? ' · Recorrente' : '');
+
+      detalheSaldoPessoas.innerHTML = '';
+      detalhe.rateio.forEach((r) => {
+        const li = document.createElement('li');
+        const nome = document.createElement('span');
+        nome.textContent = mapaPessoas[r.pessoaId] || 'Pessoa #' + r.pessoaId;
+        const valores = document.createElement('span');
+        valores.textContent = formatarValor(r.valorTotal) + ' · pago ' + formatarValor(r.valorPago) + ' · deve ' + formatarValor(r.saldoDevedor);
+        li.append(nome, valores);
+        detalheSaldoPessoas.appendChild(li);
+      });
+
+      detalheParcelas.innerHTML = '';
+      ajustarNumeroParcela.innerHTML = '';
+      detalhe.parcelas.forEach((p) => {
+        const li = document.createElement('li');
+        const info = document.createElement('span');
+        info.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
+        const status = document.createElement('span');
+        status.className = 'parcela-status' + (p.Status === 'Pago' ? ' parcela-status-pago' : '');
+        status.textContent = p.Status === 'Pago' ? 'Pago em ' + formatarData(p['Data Pagamento']) : 'Aberto';
+        li.append(info, status);
+        detalheParcelas.appendChild(li);
+
+        if (p.Status === 'Aberto') {
+          const option = document.createElement('option');
+          option.value = p['Nº Parcela'];
+          option.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
+          ajustarNumeroParcela.appendChild(option);
+        }
+      });
+
+      await popularSelect(editarCategoria, categoriasCache, detalhe.categoriaId);
+      editarDescricao.value = detalhe.descricao || '';
+      const valoresIniciais = {};
+      detalhe.rateio.forEach((r) => (valoresIniciais[r.pessoaId] = r.valorTotal));
+      montarEditarRateioLista(valoresIniciais);
+
+      if (!manterMensagens) {
+        editarLancamentoErro.hidden = true;
+        editarLancamentoSucesso.hidden = true;
+        ajustarParcelaErro.hidden = true;
+        ajustarParcelaSucesso.hidden = true;
+        excluirLancamentoErro.hidden = true;
+      }
+    } catch (erro) {
+      detalheErro.textContent = 'Não foi possível carregar o lançamento: ' + erro.message;
+      detalheErro.hidden = false;
+    }
+  }
+
+  btnVoltarLista.addEventListener('click', () => {
+    lancamentoDetalheId = null;
+    listaLancamentosCarregada = false;
+    mostrarSubtab('lista');
+    renderListaLancamentos();
+    listaLancamentosCarregada = true;
+  });
+
+  function montarEditarRateioLista(valoresIniciais) {
+    editarRateioLista.innerHTML = '';
+    pessoasParaRateio.forEach((pessoa) => {
+      const linha = document.createElement('div');
+      linha.className = 'rateio-linha';
+      linha.dataset.pessoaId = pessoa.id;
+
+      const label = document.createElement('label');
+      label.className = 'rateio-check';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'rateio-incluir';
+      const nomeSpan = document.createElement('span');
+      nomeSpan.textContent = pessoa.nome;
+      label.append(checkbox, nomeSpan);
+
+      if (pessoa.tipo !== 'Membro do Domicílio') {
+        const badge = document.createElement('span');
+        badge.className = 'rateio-tipo-badge';
+        badge.textContent = pessoa.tipo;
+        label.appendChild(badge);
+      }
+
+      const inputValor = document.createElement('input');
+      inputValor.type = 'number';
+      inputValor.className = 'rateio-valor';
+      inputValor.inputMode = 'decimal';
+      inputValor.step = '0.01';
+      inputValor.min = '0';
+      inputValor.placeholder = '0,00';
+
+      const valorInicial = valoresIniciais[pessoa.id];
+      if (valorInicial !== undefined) {
+        checkbox.checked = true;
+        inputValor.value = valorInicial.toFixed(2);
+      } else {
+        inputValor.disabled = true;
+      }
+
+      checkbox.addEventListener('change', () => {
+        inputValor.disabled = !checkbox.checked;
+        if (!checkbox.checked) inputValor.value = '';
+        atualizarEditarSomaRateio();
+      });
+      inputValor.addEventListener('input', atualizarEditarSomaRateio);
+
+      linha.append(label, inputValor);
+      editarRateioLista.appendChild(linha);
+    });
+    atualizarEditarSomaRateio();
+  }
+
+  function obterEditarRateioSelecionado() {
+    return Array.from(editarRateioLista.querySelectorAll('.rateio-linha'))
+      .filter((linha) => linha.querySelector('.rateio-incluir').checked)
+      .map((linha) => ({
+        pessoaId: Number(linha.dataset.pessoaId),
+        valor: parseFloat(linha.querySelector('.rateio-valor').value) || 0,
+      }));
+  }
+
+  function atualizarEditarSomaRateio() {
+    const rateio = obterEditarRateioSelecionado();
+    const soma = rateio.reduce((total, item) => total + item.valor, 0);
+    editarRateioSoma.textContent = 'Soma do rateio: ' + formatarValor(soma) + ' de ' + formatarValor(detalheValorTotalAtual);
+    editarRateioSoma.classList.remove('rateio-soma-ok', 'rateio-soma-erro');
+    editarRateioSoma.classList.add(Math.abs(soma - detalheValorTotalAtual) < 0.01 ? 'rateio-soma-ok' : 'rateio-soma-erro');
+  }
+
+  editarBtnDividirIgual.addEventListener('click', () => {
+    const selecionadas = Array.from(editarRateioLista.querySelectorAll('.rateio-linha')).filter(
+      (linha) => linha.querySelector('.rateio-incluir').checked
+    );
+    if (selecionadas.length === 0) return;
+
+    const partes = new Array(selecionadas.length).fill(Math.floor((detalheValorTotalAtual / selecionadas.length) * 100) / 100);
+    const somaPartes = partes.reduce((a, b) => a + b, 0);
+    partes[partes.length - 1] = Math.round((detalheValorTotalAtual - somaPartes + partes[partes.length - 1]) * 100) / 100;
+
+    selecionadas.forEach((linha, index) => {
+      linha.querySelector('.rateio-valor').value = partes[index].toFixed(2);
+    });
+    atualizarEditarSomaRateio();
+  });
+
+  formEditarLancamento.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    editarLancamentoErro.hidden = true;
+    editarLancamentoSucesso.hidden = true;
+
+    const rateio = obterEditarRateioSelecionado();
+    if (rateio.length === 0) {
+      editarLancamentoErro.textContent = 'Selecione ao menos uma pessoa no rateio.';
+      editarLancamentoErro.hidden = false;
+      return;
+    }
+
+    try {
+      await apiPost('lancamentos', 'atualizar', {
+        id: lancamentoDetalheId,
+        dados: { categoriaId: Number(editarCategoria.value), descricao: editarDescricao.value, rateio: rateio },
+      });
+      editarLancamentoSucesso.textContent = 'Alterações salvas.';
+      editarLancamentoSucesso.hidden = false;
+      listaLancamentosCarregada = false;
+      await abrirDetalheLancamento(lancamentoDetalheId, true);
+    } catch (erro) {
+      editarLancamentoErro.textContent = erro.message;
+      editarLancamentoErro.hidden = false;
+    }
+  });
+
+  formAjustarParcela.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    ajustarParcelaErro.hidden = true;
+    ajustarParcelaSucesso.hidden = true;
+
+    try {
+      await apiPost('lancamentos', 'ajustarValorParcelas', {
+        id: lancamentoDetalheId,
+        numeroParcela: Number(ajustarNumeroParcela.value),
+        novoValor: parseFloat(ajustarNovoValor.value),
+        modo: ajustarModo.value,
+      });
+      ajustarParcelaSucesso.textContent = 'Parcela(s) ajustada(s).';
+      ajustarParcelaSucesso.hidden = false;
+      ajustarNovoValor.value = '';
+      listaLancamentosCarregada = false;
+      await abrirDetalheLancamento(lancamentoDetalheId, true);
+    } catch (erro) {
+      ajustarParcelaErro.textContent = erro.message;
+      ajustarParcelaErro.hidden = false;
+    }
+  });
+
+  async function excluirLancamentoAtual(modo) {
+    const mensagem = modo === 'tudo' ? 'Excluir este lançamento por completo (todas as parcelas)?' : 'Excluir só as parcelas em aberto? As já pagas ficam como histórico.';
+    if (!confirm(mensagem)) return;
+
+    excluirLancamentoErro.hidden = true;
+    try {
+      await apiPost('lancamentos', 'excluir', { id: lancamentoDetalheId, modo: modo });
+      listaLancamentosCarregada = false;
+      if (modo === 'tudo') {
+        lancamentoDetalheId = null;
+        mostrarSubtab('lista');
+        renderListaLancamentos();
+        listaLancamentosCarregada = true;
+      } else {
+        await abrirDetalheLancamento(lancamentoDetalheId, true);
+      }
+    } catch (erro) {
+      excluirLancamentoErro.textContent = erro.message;
+      excluirLancamentoErro.hidden = false;
+    }
+  }
+
+  btnExcluirAbertas.addEventListener('click', () => excluirLancamentoAtual('apenasAbertas'));
+  btnExcluirTudo.addEventListener('click', () => excluirLancamentoAtual('tudo'));
 
   function montarRateioLista() {
     rateioLista.innerHTML = '';
