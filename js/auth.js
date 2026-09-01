@@ -9,6 +9,7 @@ function iniciarSessao(aoAutenticar) {
   const formLogin = document.getElementById('form-login');
   const loginErro = document.getElementById('login-erro');
   const btnSair = document.getElementById('btn-sair');
+  const btnMenu = document.getElementById('btn-menu');
 
   async function tentarEntrar() {
     const token = obterToken();
@@ -22,6 +23,7 @@ function iniciarSessao(aoAutenticar) {
       telaLogin.hidden = true;
       telaApp.hidden = false;
       btnSair.hidden = false;
+      btnMenu.hidden = false;
       aoAutenticar(pessoa);
     } catch (erro) {
       limparToken();
@@ -33,6 +35,7 @@ function iniciarSessao(aoAutenticar) {
     telaApp.hidden = true;
     telaLogin.hidden = false;
     btnSair.hidden = true;
+    btnMenu.hidden = true;
     if (mensagemErro) {
       loginErro.textContent = mensagemErro;
       loginErro.hidden = false;

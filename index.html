@@ -15,9 +15,15 @@
 </head>
 <body>
   <header class="app-header">
+    <button type="button" id="btn-menu" class="btn-menu" hidden aria-label="Menu">☰</button>
     <h1>Finanças</h1>
     <button type="button" id="btn-sair" class="btn-sair" hidden>Sair</button>
   </header>
+
+  <nav id="menu-lateral" class="menu-lateral" hidden>
+    <button type="button" class="menu-item" data-tela="pagar-parcela">Parcelas</button>
+  </nav>
+  <div id="menu-overlay" class="menu-overlay" hidden></div>
 
   <main class="container">
 
@@ -278,6 +284,43 @@
           </div>
         </section>
       </div>
+
+      <section id="tela-pagar-parcela" hidden>
+        <button type="button" id="btn-voltar-pagar-parcela" class="btn-secundario">← Voltar</button>
+        <h2 class="titulo-secao">Pagar Parcelas</h2>
+
+        <div class="campo-grupo">
+          <div>
+            <label for="pagar-mes">Mês</label>
+            <input type="month" id="pagar-mes">
+          </div>
+          <div>
+            <label for="pagar-meioPagamento">Meio de pagamento</label>
+            <select id="pagar-meioPagamento"><option value="">Todos</option></select>
+          </div>
+        </div>
+        <label for="pagar-categoria">Categoria</label>
+        <select id="pagar-categoria"><option value="">Todas</option></select>
+
+        <button type="button" id="btn-buscar-parcelas" class="btn-primario">Buscar parcelas em aberto</button>
+        <p id="pagar-busca-erro" class="mensagem-erro" hidden></p>
+
+        <div id="pagar-resultado" hidden>
+          <div class="botoes-rateio">
+            <button type="button" id="btn-selecionar-todas-parcelas" class="btn-secundario">Selecionar todas</button>
+          </div>
+          <ul id="lista-parcelas-pagar" class="lista-parcelas-pagar"></ul>
+          <p id="pagar-parcelas-vazio" class="estado-vazio" hidden>Nenhuma parcela em aberto com esse filtro.</p>
+          <p id="pagar-total-selecionado" class="rateio-soma"></p>
+
+          <label for="pagar-dataPagamento">Data do pagamento</label>
+          <input type="date" id="pagar-dataPagamento">
+
+          <button type="button" id="btn-confirmar-pagamento" class="btn-primario">Marcar selecionadas como pagas</button>
+          <p id="pagar-erro" class="mensagem-erro" hidden></p>
+          <p id="pagar-sucesso" class="mensagem-sucesso" hidden></p>
+        </div>
+      </section>
     </section>
   </main>
 

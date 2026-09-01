@@ -92,6 +92,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const anteciparParcelaErro = document.getElementById('antecipar-parcela-erro');
   const anteciparParcelaSucesso = document.getElementById('antecipar-parcela-sucesso');
 
+  const btnMenu = document.getElementById('btn-menu');
+  const menuLateral = document.getElementById('menu-lateral');
+  const menuOverlay = document.getElementById('menu-overlay');
+
+  const telaPagarParcela = document.getElementById('tela-pagar-parcela');
+  const btnVoltarPagarParcela = document.getElementById('btn-voltar-pagar-parcela');
+  const pagarMes = document.getElementById('pagar-mes');
+  const pagarMeioPagamento = document.getElementById('pagar-meioPagamento');
+  const pagarCategoria = document.getElementById('pagar-categoria');
+  const btnBuscarParcelas = document.getElementById('btn-buscar-parcelas');
+  const pagarBuscaErro = document.getElementById('pagar-busca-erro');
+  const pagarResultado = document.getElementById('pagar-resultado');
+  const btnSelecionarTodasParcelas = document.getElementById('btn-selecionar-todas-parcelas');
+  const listaParcelasPagar = document.getElementById('lista-parcelas-pagar');
+  const pagarParcelasVazio = document.getElementById('pagar-parcelas-vazio');
+  const pagarTotalSelecionado = document.getElementById('pagar-total-selecionado');
+  const pagarDataPagamento = document.getElementById('pagar-dataPagamento');
+  const btnConfirmarPagamento = document.getElementById('btn-confirmar-pagamento');
+  const pagarErro = document.getElementById('pagar-erro');
+  const pagarSucesso = document.getElementById('pagar-sucesso');
+
   const btnExcluirAbertas = document.getElementById('btn-excluir-abertas');
   const btnExcluirTudo = document.getElementById('btn-excluir-tudo');
   const excluirLancamentoErro = document.getElementById('excluir-lancamento-erro');
@@ -100,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let listaLancamentosCarregada = false;
   let pessoasParaRateio = [];
   let categoriasCache = [];
+  let meiosPagamentoCache = [];
   let mapaCategorias = {};
   let mapaMeiosPagamento = {};
   let mapaPessoas = {};
@@ -295,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gerenciadorRateioNova.atualizarResumo();
 
     categoriasCache = categorias;
+    meiosPagamentoCache = meiosPagamento;
     mapaCategorias = {};
     categorias.forEach((c) => (mapaCategorias[c.id] = c.nome));
     mapaMeiosPagamento = {};
@@ -795,6 +818,157 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     });
+  });
+
+  // Menu ☰ — telas alcançadas fora das 3 abas fixas (ver docs/navegacao.md)
+  function fecharMenu() {
+    menuLateral.hidden = true;
+    menuOverlay.hidden = true;
+  }
+
+  btnMenu.addEventListener('click', () => {
+    menuLateral.hidden = false;
+    menuOverlay.hidden = false;
+  });
+  menuOverlay.addEventListener('click', fecharMenu);
+
+  document.querySelectorAll('.menu-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      fecharMenu();
+      if (item.dataset.tela === 'pagar-parcela') abrirTelaPagarParcela();
+    });
+  });
+
+  function popularSelectComOpcaoTodos(select, itens, rotuloTodos) {
+    select.innerHTML = '<option value="">' + rotuloTodos + '</option>';
+    itens.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.nome;
+      select.appendChild(option);
+    });
+  }
+
+  async function abrirTelaPagarParcela() {
+    Object.values(tabPanels).forEach((painel) => {
+      painel.hidden = true;
+    });
+    tabButtons.forEach((b) => b.setAttribute('aria-selected', 'false'));
+    containerPrincipal.classList.remove('container-larga');
+    telaPagarParcela.hidden = false;
+
+    pagarBuscaErro.hidden = true;
+    pagarErro.hidden = true;
+    pagarSucesso.hidden = true;
+    pagarResultado.hidden = true;
+
+    if (!listasLancamentoCarregadas) {
+      listasLancamentoCarregadas = true;
+      try {
+        await carregarListasLancamento();
+      } catch (erro) {
+        pagarBuscaErro.textContent = 'Não foi possível carregar categorias/meios de pagamento: ' + erro.message;
+        pagarBuscaErro.hidden = false;
+      }
+    }
+
+    popularSelectComOpcaoTodos(pagarMeioPagamento, meiosPagamentoCache, 'Todos');
+    popularSelectComOpcaoTodos(pagarCategoria, categoriasCache, 'Todas');
+    pagarMes.value = mesAtual();
+    preencherDataHoje(pagarDataPagamento);
+  }
+
+  btnVoltarPagarParcela.addEventListener('click', () => {
+    telaPagarParcela.hidden = true;
+    document.querySelector('[data-tab="lancar"]').click();
+  });
+
+  function atualizarTotalSelecionado() {
+    const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));
+    const selecionados = checks.filter((c) => c.checked);
+    const total = selecionados.reduce((soma, c) => soma + Number(c.dataset.valor), 0);
+    pagarTotalSelecionado.textContent = selecionados.length + ' selecionada(s) · Total: ' + formatarValor(total);
+  }
+
+  async function buscarParcelasAbertas() {
+    const parcelas = await apiGet('parcelas', {
+      status: 'Aberto',
+      mes: pagarMes.value,
+      meioPagamentoId: pagarMeioPagamento.value,
+      categoriaId: pagarCategoria.value,
+    });
+
+    listaParcelasPagar.innerHTML = '';
+    parcelas.forEach((p) => {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = p.ID;
+      checkbox.dataset.valor = p.Valor;
+      checkbox.addEventListener('change', atualizarTotalSelecionado);
+
+      const info = document.createElement('span');
+      info.className = 'parcela-pagar-info';
+      info.textContent =
+        (p.descricao || '(sem descrição)') + ' · ' + (mapaCategorias[p.categoriaId] || '?') + ' · Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']);
+
+      const valor = document.createElement('span');
+      valor.className = 'parcela-pagar-valor';
+      valor.textContent = formatarValor(p.Valor);
+
+      li.append(checkbox, info, valor);
+      listaParcelasPagar.appendChild(li);
+    });
+
+    pagarParcelasVazio.hidden = parcelas.length > 0;
+    pagarResultado.hidden = false;
+    btnSelecionarTodasParcelas.textContent = 'Selecionar todas';
+    atualizarTotalSelecionado();
+  }
+
+  btnBuscarParcelas.addEventListener('click', async () => {
+    pagarBuscaErro.hidden = true;
+    pagarErro.hidden = true;
+    pagarSucesso.hidden = true;
+    try {
+      await buscarParcelasAbertas();
+    } catch (erro) {
+      pagarBuscaErro.textContent = erro.message;
+      pagarBuscaErro.hidden = false;
+    }
+  });
+
+  btnSelecionarTodasParcelas.addEventListener('click', () => {
+    const checks = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]'));
+    const todasMarcadas = checks.length > 0 && checks.every((c) => c.checked);
+    checks.forEach((c) => {
+      c.checked = !todasMarcadas;
+    });
+    btnSelecionarTodasParcelas.textContent = todasMarcadas ? 'Selecionar todas' : 'Desmarcar todas';
+    atualizarTotalSelecionado();
+  });
+
+  btnConfirmarPagamento.addEventListener('click', async () => {
+    pagarErro.hidden = true;
+    pagarSucesso.hidden = true;
+
+    const parcelaIds = Array.from(listaParcelasPagar.querySelectorAll('input[type="checkbox"]:checked')).map((c) => Number(c.value));
+    if (parcelaIds.length === 0) {
+      pagarErro.textContent = 'Selecione ao menos uma parcela.';
+      pagarErro.hidden = false;
+      return;
+    }
+
+    try {
+      await apiPost('parcelas', 'pagar', { parcelaIds: parcelaIds, dataPagamento: pagarDataPagamento.value });
+      pagarSucesso.textContent = parcelaIds.length + ' parcela(s) marcada(s) como paga(s).';
+      pagarSucesso.hidden = false;
+      listaLancamentosCarregada = false;
+      await buscarParcelasAbertas();
+    } catch (erro) {
+      pagarErro.textContent = erro.message;
+      pagarErro.hidden = false;
+    }
   });
 
   filtroMes.addEventListener('change', renderHistorico);
