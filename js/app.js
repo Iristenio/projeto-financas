@@ -177,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     gastoErro.hidden = true;
+    btnSalvar.disabled = true;
 
     const emEdicao = idEmEdicao !== null;
     const dados = {
@@ -203,15 +204,17 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSalvar.textContent = emEdicao ? 'Atualizado!' : 'Salvo!';
       setTimeout(() => {
         btnSalvar.textContent = textoBtnSalvar;
+        btnSalvar.disabled = false;
       }, 1000);
     } catch (erro) {
       gastoErro.textContent = erro.message;
       gastoErro.hidden = false;
+      btnSalvar.disabled = false;
     }
   });
 
   iniciarSessao(async (pessoa) => {
-    saudacao.textContent = 'Olá, ' + pessoa.nome + ' (' + pessoa.papel + ')';
+    saudacao.textContent = 'Olá, ' + pessoa.nome;
 
     if (pessoa.papel !== 'Admin') {
       bloqueioColaborador.hidden = false;
