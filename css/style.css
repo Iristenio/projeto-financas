@@ -181,6 +181,136 @@ form select {
   margin-top: 10px;
 }
 
+.mensagem-sucesso {
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+.titulo-secao {
+  font-size: 1.1rem;
+  margin: 4px 0 14px;
+}
+
+.campo-ajuda {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-grupo > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.campo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.campo-checkbox input {
+  width: auto;
+}
+
+.rateio-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 14px 14px;
+  margin: 18px 0 10px;
+}
+
+.rateio-fieldset legend {
+  padding: 0 6px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.rateio-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rateio-linha:last-of-type {
+  border-bottom: none;
+}
+
+.rateio-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 140px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.rateio-check input {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.rateio-tipo-badge {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.rateio-valor {
+  width: 110px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.rateio-valor:disabled {
+  opacity: 0.4;
+}
+
+.btn-secundario {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.rateio-soma {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.rateio-soma-ok {
+  color: var(--color-primary);
+}
+
+.rateio-soma-erro {
+  color: var(--color-danger);
+}
+
 .filtro-mes-label {
   display: block;
   font-size: 0.85rem;
@@ -266,5 +396,23 @@ form select {
 
   .app-header {
     max-width: 640px;
+  }
+}
+
+/* Lançamentos é a tela mais usada no desktop, com mais campos por
+   registro — libera uma visão bem mais larga e em duas colunas,
+   sem afetar as outras abas (mobile-first o resto do app). */
+@media (min-width: 900px) {
+  .container.container-larga {
+    max-width: 900px;
+  }
+
+  .campo-grupo {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  .campo-grupo > div {
+    flex: 1;
   }
 }
