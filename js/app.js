@@ -108,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pagarAno = document.getElementById('pagar-ano');
   const pagarMeioPagamento = document.getElementById('pagar-meioPagamento');
   const pagarCategoria = document.getElementById('pagar-categoria');
+  const pagarPessoa = document.getElementById('pagar-pessoa');
   const btnBuscarParcelas = document.getElementById('btn-buscar-parcelas');
   const pagarBuscaErro = document.getElementById('pagar-busca-erro');
   const pagarResultado = document.getElementById('pagar-resultado');
@@ -1045,6 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     popularSelectComOpcaoTodos(pagarMeioPagamento, meiosPagamentoCache, 'Todos');
     popularSelectComOpcaoTodos(pagarCategoria, categoriasCache, 'Todas');
+    popularSelectComOpcaoTodos(pagarPessoa, pessoasParaRateio, 'Todas');
     // Mês/ano vêm pré-preenchidos com o atual (visível nos selects,
     // dá pra ver e trocar), com "Todos os meses" disponível caso
     // queira ver tudo de uma vez, cruzando vários anos.
@@ -1492,6 +1494,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mes: obterMesAnoValor(pagarMes, pagarAno),
       meioPagamentoId: pagarMeioPagamento.value,
       categoriaId: pagarCategoria.value,
+      pessoaId: pagarPessoa.value,
     });
 
     // Agrupa por conta (Lançamento) — dá pra selecionar uma parcela
@@ -1552,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkbox.dataset.valor = p.Valor;
         checkbox.addEventListener('change', atualizarTotalSelecionado);
         const texto = document.createElement('span');
-        texto.textContent = 'Nº' + p['Nº Parcela'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
+        texto.textContent = 'Nº' + p['Nº Parcela'] + '/' + p['Total Parcelas'] + ' · ' + formatarMesAno(p['Mês Vencimento']) + ' · ' + formatarValor(p.Valor);
         labelParcela.append(checkbox, texto);
         liParcela.appendChild(labelParcela);
         parcelasUl.appendChild(liParcela);
